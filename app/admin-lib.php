@@ -762,6 +762,8 @@ function admin_setting_groups(): array
                 'venue_city'        => ['label' => 'City / country', 'type' => 'text'],
                 'venue_map_url'     => ['label' => 'Map link', 'type' => 'url'],
                 'venue_image'       => ['label' => 'Venue photo', 'type' => 'image'],
+                'section_bg_image'  => ['label' => 'Background behind inner-page headers', 'type' => 'image', 'help' => 'Sits behind the title strip on About, Programme, Exhibit and the rest. Leave blank for a plain background.'],
+                'cta_bg_image'      => ['label' => 'Background behind the closing banner', 'type' => 'image', 'help' => 'The last band on the home page. Leave blank for a plain background.'],
             ],
         ],
 

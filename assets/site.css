@@ -1643,3 +1643,145 @@ em {
 
   .bk-proof-list li, .bk-request-list li { align-items: flex-start; }
 }
+
+/* ==========================================================================
+   DESIGN REFINEMENTS
+   Appended after everything above, so these rules win by cascade order and
+   the original stylesheet stays untouched.
+   ========================================================================== */
+
+/* ------------------------------------------------- 1. logos must not crop */
+/* The old rule was max-height:100% with width:auto. Inside the grid that
+   .logo-media uses, that percentage never resolves, so a square or tall logo
+   rendered at its natural size and got chopped off by overflow:hidden.
+   Giving the image a real box lets object-fit do its job: every logo is now
+   shown whole, whatever its shape. */
+.logo-card .logo-media img,
+.host-strip img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+.logo-card .logo-media {
+  padding: .85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.host-strip img { width: 66px; height: 66px; padding: 6px; background: #fff; }
+
+/* Give the white logo plates a little more room to breathe. */
+.logo-card { padding-bottom: 1.1rem; }
+
+/* --------------------------------------------------- 2. a visible brandmark */
+.site-header .brand img {
+  height: 62px;
+  width: auto;
+  filter: drop-shadow(0 2px 10px rgba(0, 0, 0, .55));
+}
+.site-header.scrolled .brand img { height: 50px; }
+.footer-brand .brand img { height: 72px; width: auto; }
+
+@media (max-width: 720px) {
+  .site-header .brand img { height: 50px; }
+  .site-header.scrolled .brand img { height: 44px; }
+}
+
+/* ------------------------------------------------------ 3. the sign-in button */
+.nav-signin {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .6rem 1.1rem;
+  margin-left: .35rem;
+  border: 1px solid var(--line-light);
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: .84rem;
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color .25s var(--ease), background .25s var(--ease), color .25s var(--ease);
+}
+.nav-signin svg { width: 15px; height: 15px; flex: none; }
+.nav-signin:hover,
+.nav-signin.active {
+  border-color: var(--accent);
+  background: rgba(34, 201, 240, .12);
+  color: var(--accent);
+}
+/* On the pale inner pages the header is still dark, so no light variant is
+   needed — but the mobile drawer is pale, so give it ink there. */
+@media (max-width: 980px) {
+  .main-nav .nav-signin {
+    justify-content: center;
+    margin: .4rem 0 0;
+    border-color: var(--line);
+    color: var(--ink);
+  }
+}
+
+/* ------------------------------------------- 4. photographic section backing */
+/* A picture sits behind the section, covered by a gradient so every word on
+   top keeps its contrast. Used on the closing banner and the inner-page hero. */
+.photo-back { position: relative; isolation: isolate; overflow: hidden; }
+.photo-back > .photo-back-media {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+.photo-back > .photo-back-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+.photo-back > .photo-back-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 70% 40%, rgba(4, 18, 31, .35) 0%, rgba(4, 18, 31, .82) 62%, rgba(4, 18, 31, .96) 100%),
+    linear-gradient(180deg, rgba(4, 18, 31, .88) 0%, rgba(4, 18, 31, .55) 35%, rgba(4, 18, 31, .92) 100%);
+}
+
+/* The closing banner becomes the strongest moment on the page. */
+.cta-band.photo-back { padding-block: clamp(4.5rem, 9vw, 7rem); }
+.cta-band.photo-back h2 { text-shadow: 0 2px 24px rgba(0, 0, 0, .5); }
+
+/* Inner page heroes get the same picture, quieter. */
+.page-hero.photo-back { background: var(--ink); }
+.page-hero.photo-back > .photo-back-media::after {
+  background:
+    radial-gradient(100% 80% at 78% 30%, rgba(4, 18, 31, .42) 0%, rgba(4, 18, 31, .86) 58%, rgba(4, 18, 31, .97) 100%),
+    linear-gradient(180deg, rgba(4, 18, 31, .92) 0%, rgba(4, 18, 31, .62) 40%, var(--ink) 100%);
+}
+.page-hero.photo-back .hero-glow { opacity: .5; }
+
+@media (max-width: 720px) {
+  .photo-back > .photo-back-media::after {
+    background: linear-gradient(180deg, rgba(4, 18, 31, .9) 0%, rgba(4, 18, 31, .78) 45%, rgba(4, 18, 31, .96) 100%);
+  }
+}
+
+/* ----------------------------------------------- 5. nothing else may crop */
+/* Any picture the panel can point at is shown whole or filled deliberately —
+   never accidentally clipped. */
+.speaker-card .photo img,
+.gallery-grid img,
+.venue-photo img,
+.showcase-media img,
+.bk-service-media img { object-position: center; }
+
+/* Between the mobile drawer and a roomy desktop the bar is tight, because it
+   now carries a sign-in button as well. Compress the spacing rather than let
+   anything wrap onto a second line. */
+@media (min-width: 981px) and (max-width: 1120px) {
+  .main-nav { gap: .1rem; }
+  .main-nav a { padding-left: .55rem; padding-right: .55rem; font-size: .82rem; }
+  .nav-signin { padding: .5rem .8rem; margin-left: .2rem; }
+  .nav-signin svg { width: 14px; height: 14px; }
+  .site-header .brand img { height: 54px; }
+}

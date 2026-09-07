@@ -66,7 +66,8 @@ function asset_version(string $relative): string
 
 function site_header(string $slug): void
 {
-    $logo = site_image(setting('logo'), 110);
+    $logo = site_image(setting('logo'), 150);
+    $signedIn = function_exists('client_logged_in') && client_logged_in();
     ?>
 <header class="site-header" id="siteHeader">
   <div class="header-inner">
@@ -80,6 +81,17 @@ function site_header(string $slug): void
       <?php foreach (nav_pages() as $item): ?>
         <a href="<?= e(page_url((string) $item['slug'])) ?>"<?= $item['slug'] === $slug ? ' class="active" aria-current="page"' : '' ?>><?= e($item['nav_label']) ?></a>
       <?php endforeach; ?>
+      <?php if (function_exists('bk_enabled') && bk_enabled() && setting_bool('bk_nav_enabled', true)): ?>
+        <a class="nav-signin<?= in_array($slug, ['account', 'login', 'register'], true) ? ' active' : '' ?>"
+           href="<?= e(url($signedIn ? 'booking/account.php' : 'auth/login.php')) ?>">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          <?= $signedIn ? 'My bookings' : 'Sign in' ?>
+        </a>
+      <?php endif; ?>
       <?php if (setting_bool('registration_open', true) && setting('nav_cta_text') !== ''): ?>
         <a class="nav-cta" href="<?= e(url(setting('nav_cta_link', 'booking/'))) ?>"><?= e(setting('nav_cta_text', 'Book online')) ?> <span aria-hidden="true">↗</span></a>
       <?php endif; ?>
@@ -382,6 +394,25 @@ function rawurlencode_path(string $path): string
     return implode('/', array_map('rawurlencode', $parts));
 }
 
+/**
+ * The picture that sits behind a section, at a sensible size.
+ *
+ * Returns '' when the setting is blank or the file is missing, and the caller
+ * then renders the section exactly as it did before — so switching the
+ * background off in the control panel is always safe.
+ */
+function section_photo(string $settingKey, int $width = 700): string
+{
+    $path = trim(setting($settingKey));
+    if ($path === '') {
+        return '';
+    }
+    if (!preg_match('#^(https?:)?//#i', $path) && !is_file(ROOT_PATH . '/' . ltrim($path, '/'))) {
+        return '';
+    }
+    return site_image($path, $width);
+}
+
 /** Small reusable "section heading" block. */
 function section_head(string $label, string $title, string $text = ''): void
 {
@@ -397,8 +428,12 @@ function section_head(string $label, string $title, string $text = ''): void
 /** Standard inner-page hero. */
 function page_hero(array $page): void
 {
+    $photo = section_photo('section_bg_image');
     ?>
-<section class="page-hero">
+<section class="page-hero<?= $photo !== '' ? ' photo-back' : '' ?>">
+  <?php if ($photo !== ''): ?>
+    <div class="photo-back-media" aria-hidden="true"><img src="<?= e($photo) ?>" alt="" loading="lazy"></div>
+  <?php endif; ?>
   <div class="hero-glow" aria-hidden="true"></div>
   <div class="shell">
     <?php if ($page['hero_label'] !== ''): ?><p class="label"><?= e($page['hero_label']) ?></p><?php endif; ?>

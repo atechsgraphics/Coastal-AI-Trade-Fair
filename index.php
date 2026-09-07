@@ -309,14 +309,18 @@ site_header('home');
 <?php endif; ?>
 
 <!-- ============================================================= CTA -->
-<section class="section on-dark cta-band">
+<?php $ctaPhoto = section_photo('cta_bg_image'); ?>
+<section class="section on-dark cta-band<?= $ctaPhoto !== '' ? ' photo-back' : '' ?>">
+  <?php if ($ctaPhoto !== ''): ?>
+    <div class="photo-back-media" aria-hidden="true"><img src="<?= e($ctaPhoto) ?>" alt="" loading="lazy"></div>
+  <?php endif; ?>
   <div class="shell reveal">
     <p class="label" style="justify-content:center"><?= e(setting('event_name')) ?></p>
     <h2><?= headline(setting('cta_title')) ?></h2>
     <p><?= nl(setting('cta_text')) ?></p>
     <div class="btn-row">
-      <a class="btn btn-primary" href="book.php">Book your space <span aria-hidden="true">→</span></a>
-      <a class="btn btn-ghost" href="packages.php">See what's on offer <span aria-hidden="true">↗</span></a>
+      <a class="btn btn-primary" href="<?= e(url('booking/')) ?>">Book online <span aria-hidden="true">→</span></a>
+      <a class="btn btn-ghost" href="<?= e(url('packages.php')) ?>">See what's on offer <span aria-hidden="true">↗</span></a>
     </div>
   </div>
 </section>
