@@ -1,0 +1,7 @@
+php_flag engine off
+<FilesMatch "\.(php|phtml|php[0-9]|pl|py|cgi|sh|htaccess)$">
+  Require all denied
+  <IfModule !mod_authz_core.c>
+    Deny from all
+  </IfModule>
+</FilesMatch>

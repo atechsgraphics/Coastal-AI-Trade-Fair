@@ -1,0 +1,71 @@
+# Coastal AI Summit & SME Trade Fair — Apache configuration
+# Safe defaults. Every directive is wrapped so the site still works on
+# servers where a module is missing.
+
+DirectoryIndex index.php index.html
+
+# No directory listings
+Options -Indexes
+
+# A branded page for addresses that do not exist.
+# This path is from the domain root, which is right when the site is the whole
+# site (public_html). If you run it from a subfolder — as XAMPP does locally —
+# put the folder in front, e.g. ErrorDocument 404 /myfolder/404.php
+ErrorDocument 404 /404.php
+
+# ---------------------------------------------------------------- security
+# The application code and the database are never served directly.
+RedirectMatch 404 ^/(.*/)?(inc|data)/.*$
+
+<FilesMatch "\.(db|sqlite|sqlite3|lock|log|md)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+</IfModule>
+
+# ---------------------------------------------------------------- rewrites
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Old .html addresses keep working.
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^(index|about|programme|exhibit|packages|partners|contact)\.html$ $1.php [R=301,L]
+
+  # Allow clean addresses such as /about as well as /about.php
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^([a-z0-9_-]+)/?$ $1.php [L]
+</IfModule>
+
+# ------------------------------------------------------------ performance
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml application/javascript application/json image/svg+xml
+</IfModule>
+
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 7 days"
+  ExpiresByType application/javascript "access plus 7 days"
+  ExpiresByType image/jpeg "access plus 30 days"
+  ExpiresByType image/png "access plus 30 days"
+  ExpiresByType image/webp "access plus 30 days"
+  ExpiresByType image/svg+xml "access plus 30 days"
+  ExpiresByType application/pdf "access plus 30 days"
+</IfModule>
+
+# --------------------------------------------------------------- uploads
+<IfModule mod_php.c>
+  php_value upload_max_filesize 8M
+  php_value post_max_size 10M
+</IfModule>

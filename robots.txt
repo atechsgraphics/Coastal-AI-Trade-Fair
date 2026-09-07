@@ -1,0 +1,23 @@
+User-agent: *
+Allow: /
+
+# Nothing below is useful to a search engine.
+Disallow: /admin.php
+Disallow: /setup.php
+Disallow: /inc/
+Disallow: /data/
+
+# Private booking pages. The booking page itself (/booking.php) is public and
+# should be indexed; everything here is personal to one client.
+Disallow: /account.php
+Disallow: /pay.php
+Disallow: /download.php
+Disallow: /verify-ticket.php
+Disallow: /login.php
+Disallow: /register.php
+Disallow: /verify-email.php
+Disallow: /forgot-password.php
+Disallow: /reset-password.php
+
+# Once the site is live, add the full address of the sitemap here, e.g.
+# Sitemap: https://coastalaitradefair.com/sitemap.php

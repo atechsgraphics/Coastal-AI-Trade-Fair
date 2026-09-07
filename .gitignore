@@ -1,0 +1,83 @@
+# ==========================================================================
+#  Coastal AI Summit & SME Trade Fair — what git must never carry
+#
+#  The rule: code and design are versioned; the site's data is not. Everything
+#  below either identifies the installation, holds live client records, or is
+#  regenerated automatically on the server.
+# ==========================================================================
+
+# ---------------------------------------------------------------- secrets
+# SMTP password and any other credential. Never commit this file.
+data/env.php
+env.php
+*.env
+.env
+
+# ------------------------------------------------------------- the database
+# Holds every setting, booking, payment and the staff password hashes.
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/*.sqlite
+data/*.sqlite3
+
+# The file that records the database's deliberately unguessable name.
+# Publishing it would undo that protection.
+data/config.php
+
+# Per-installation state, written by the installer and the migration.
+data/installed.lock
+data/schema-version.lock
+
+# ------------------------------------------------------- client information
+# Proof-of-payment files people upload, and the tickets and receipts
+# generated for them. Personal data — keep it on the server only.
+data/proofs/*
+data/tickets/*
+data/receipts/*
+data/tmp/*
+
+# ...but do keep the rules that stop the web server serving those folders,
+# so a fresh deployment is protected from the very first request.
+!data/proofs/.htaccess
+!data/proofs/web.config
+!data/proofs/index.html
+!data/tickets/.htaccess
+!data/tickets/web.config
+!data/tickets/index.html
+!data/receipts/.htaccess
+!data/receipts/web.config
+!data/receipts/index.html
+!data/tmp/.htaccess
+!data/tmp/web.config
+!data/tmp/index.html
+
+# ------------------------------------------------------------ uploaded media
+# Anything added through the control panel belongs to the live site, not here.
+uploads/*
+!uploads/.htaccess
+!uploads/web.config
+
+# Resized copies of site images. Rebuilt automatically on the next page view.
+uploads/cache/
+
+# ----------------------------------------------------- editors and operating
+# systems
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+._*
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.sublime-*
+
+# ------------------------------------------------------------------ scratch
+*.log
+*.bak
+*.orig
+*.tmp
+_*.php
