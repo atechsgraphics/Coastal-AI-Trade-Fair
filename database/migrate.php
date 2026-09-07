@@ -295,7 +295,11 @@ CREATE INDEX IF NOT EXISTS idx_guests_bkg   ON booking_guests (booking_id, posit
 CREATE INDEX IF NOT EXISTS idx_services_pos ON services (position, id);
 SQL;
 
-    db()->exec($sql);
+    if (db_is_mysql()) {
+        db_run_sql_file(ROOT_PATH . '/database/mysql-schema.sql');
+    } else {
+        db()->exec($sql);
+    }
 
     booking_add_columns();
     booking_seed_settings();
@@ -349,14 +353,10 @@ function booking_add_columns(): array
 
     $added = [];
     foreach ($additions as $table => $columns) {
-        $exists = db_one("SELECT name FROM sqlite_master WHERE type = 'table' AND name = :t", [':t' => $table]);
-        if (!$exists) {
+        if (!db_table_exists($table)) {
             continue;
         }
-        $present = [];
-        foreach (db_all("PRAGMA table_info({$table})") as $column) {
-            $present[] = $column['name'];
-        }
+        $present = db_table_columns($table);
         foreach ($columns as $name => $definition) {
             if (!in_array($name, $present, true)) {
                 db()->exec("ALTER TABLE {$table} ADD COLUMN {$name} {$definition}");
@@ -374,15 +374,8 @@ function booking_add_columns(): array
  */
 function booking_seed_settings(): void
 {
-    $existing = [];
-    foreach (db_all('SELECT key FROM settings') as $row) {
-        $existing[$row['key']] = true;
-    }
-
     foreach (booking_setting_defaults() as $key => $value) {
-        if (!isset($existing[$key])) {
-            db_run('INSERT INTO settings (key, value) VALUES (:k, :v)', [':k' => $key, ':v' => (string) $value]);
-        }
+        db_setting_put_missing($key, (string) $value);
     }
 }
 

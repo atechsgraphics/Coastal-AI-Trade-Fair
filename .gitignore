@@ -25,6 +25,13 @@ storage/*.sqlite3
 # Publishing it would undo that protection.
 storage/config.php
 
+# Database dumps. site-data.sql carries every row the live site holds,
+# including the staff password hashes — it is for importing, not for sharing.
+database/site-data.sql
+database/*-data.sql
+*.sql.gz
+*.dump
+
 # Per-installation state, written by the installer and the migration.
 storage/installed.lock
 storage/schema-version.lock

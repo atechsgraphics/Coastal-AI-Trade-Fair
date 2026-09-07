@@ -52,7 +52,12 @@ function require_owner(): void
 
 function admin_login(string $username, string $password): bool
 {
-    $user = db_one('SELECT * FROM users WHERE username = :u OR email = :u', [':u' => trim($username)]);
+    // Two placeholders rather than one reused: MySQL's native prepared
+    // statements will not bind the same name twice.
+    $user = db_one(
+        'SELECT * FROM users WHERE username = :username OR email = :email',
+        [':username' => trim($username), ':email' => trim($username)]
+    );
     if (!$user || !password_verify($password, $user['password_hash'])) {
         return false;
     }

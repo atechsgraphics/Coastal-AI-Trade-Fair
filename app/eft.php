@@ -361,9 +361,7 @@ function bk_begin(): void
         return;
     }
 
-    $pdo = db();
-    $pdo->exec('PRAGMA busy_timeout = 8000');
-    $pdo->exec('BEGIN IMMEDIATE');       // nothing to unwind if this throws
+    db_begin_exclusive();                // nothing to unwind if this throws
     bk_tx_depth(1);
     bk_tx_poisoned(false);
 }
@@ -1037,12 +1035,18 @@ function bk_cancel_booking(array $booking, string $reason, string $by = 'staff')
         return ['ok' => false, 'message' => 'That booking is already cancelled.'];
     }
 
+    // Built in PHP rather than in SQL: "||" concatenates in SQLite but means
+    // logical OR in MySQL, so doing it in the query is not portable.
+    $existing = trim((string) $booking['admin_notes']);
+    $note = 'Cancelled: ' . mb_substr($reason, 0, 400);
+    $notes = trim($existing === '' ? $note : $existing . "\n" . $note);
+
     db_run(
-        'UPDATE service_bookings SET admin_notes = TRIM(admin_notes || :note), updated_at = :u WHERE id = :id',
+        'UPDATE service_bookings SET admin_notes = :notes, updated_at = :u WHERE id = :id',
         [
-            ':note' => ($booking['admin_notes'] !== '' ? "\n" : '') . 'Cancelled: ' . mb_substr($reason, 0, 400),
-            ':u'    => date('Y-m-d H:i:s'),
-            ':id'   => (int) $booking['id'],
+            ':notes' => mb_substr($notes, 0, 2000),
+            ':u'     => date('Y-m-d H:i:s'),
+            ':id'    => (int) $booking['id'],
         ]
     );
 

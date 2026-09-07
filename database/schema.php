@@ -196,7 +196,12 @@ CREATE INDEX IF NOT EXISTS idx_bookings_date ON bookings (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_rate_hits ON rate_hits (key, created_at);
 SQL;
 
-    db()->exec($sql);
+    if (db_is_mysql()) {
+        db_run_sql_file(ROOT_PATH . '/database/mysql-schema.sql');
+    } else {
+        db()->exec($sql);
+    }
+
     schema_migrate();
 }
 
@@ -215,10 +220,7 @@ function schema_migrate(): void
     ];
 
     foreach ($additions as $table => $columns) {
-        $existing = [];
-        foreach (db_all("PRAGMA table_info({$table})") as $column) {
-            $existing[] = $column['name'];
-        }
+        $existing = db_table_columns($table);
         foreach ($columns as $name => $definition) {
             if (!in_array($name, $existing, true)) {
                 db()->exec("ALTER TABLE {$table} ADD COLUMN {$name} {$definition}");
@@ -363,10 +365,7 @@ function seed_settings(): void
     ];
 
     foreach ($defaults as $key => $value) {
-        db_run(
-            'INSERT INTO settings (key, value) VALUES (:k, :v) ON CONFLICT(key) DO NOTHING',
-            [':k' => $key, ':v' => $value]
-        );
+        db_setting_put_missing($key, (string) $value);
     }
 }
 

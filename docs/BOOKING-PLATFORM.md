@@ -40,6 +40,52 @@ The nine statuses a booking moves through:
 
 ### 2.1 The database
 
+The site runs on **MySQL/MariaDB** or **SQLite**, decided by `storage/env.php`:
+
+```php
+'DB_DRIVER'   => 'mysql',
+'DB_HOST'     => 'localhost',
+'DB_NAME'     => 'your_database',
+'DB_USER'     => 'your_user',
+'DB_PASSWORD' => 'your_password',
+```
+
+With no `DB_DRIVER` set it stays on SQLite, which is how it runs locally.
+
+**Setting up MySQL on shared hosting (cPanel):**
+
+1. **MySQL Databases** in cPanel — create the database and a user, then add
+   the user to the database with *All Privileges*.
+2. **phpMyAdmin** — select the database, open **Import**, choose
+   `database/site-data.sql`, press **Go**. That one file carries the schema
+   and every row the site currently holds.
+3. Put the credentials in `storage/env.php` on the server. Never commit that
+   file; it is already in `.gitignore`.
+
+**Moving an existing SQLite site to MySQL:** run this on the machine that has
+the SQLite database, then import the file it writes.
+
+```
+php database/export-to-mysql.php
+```
+
+It only reads; the SQLite database is left alone.
+
+### 2.1b What differs between the two engines
+
+Everything the engines disagree about lives in `app/database.php`. Worth
+knowing if you ever edit a query:
+
+- `key` is a reserved word in MySQL — `db_name('key')` quotes it correctly.
+- MySQL will not accept a `DEFAULT` on a `TEXT` column, so short fields that
+  need one are `VARCHAR` in `database/mysql-schema.sql`.
+- MySQL's native prepared statements will not bind the same placeholder twice.
+  Write `:username` and `:email`, not `:u` used twice.
+- `||` joins strings in SQLite but means *or* in MySQL. Concatenate in PHP.
+- `PRAGMA`, `sqlite_master` and `BEGIN IMMEDIATE` have no MySQL equivalent;
+  use `db_table_exists()`, `db_table_columns()` and `db_begin_exclusive()`.
+
+
 Nothing to run. The first time a page loads after these files are in place,
 the new tables are created automatically and `storage/schema-version.lock`
 records that it is done.

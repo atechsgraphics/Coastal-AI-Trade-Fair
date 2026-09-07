@@ -48,6 +48,9 @@ date_default_timezone_set('Africa/Windhoek');
 
 /* ------------------------------------------------------------------ database */
 
+/** Everything the two database engines disagree about. */
+require_once __DIR__ . '/database.php';
+
 function db(): PDO
 {
     static $pdo = null;
@@ -55,15 +58,32 @@ function db(): PDO
         return $pdo;
     }
 
+    $options = [
+        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES   => false,
+    ];
+
+    if (db_is_mysql()) {
+        $config = db_config();
+        $dsn = 'mysql:host=' . $config['host']
+            . ';port=' . $config['port']
+            . ';dbname=' . $config['name']
+            . ';charset=' . $config['charset'];
+
+        $pdo = new PDO($dsn, $config['user'], $config['password'], $options);
+
+        // Match SQLite's strictness so a value too long for a column is an
+        // error rather than something silently truncated.
+        $pdo->exec("SET SESSION sql_mode = 'STRICT_ALL_TABLES,NO_ENGINE_SUBSTITUTION'");
+        return $pdo;
+    }
+
     if (!is_dir(DATA_PATH)) {
         @mkdir(DATA_PATH, 0775, true);
     }
 
-    $pdo = new PDO('sqlite:' . DB_FILE, null, null, [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES   => false,
-    ]);
+    $pdo = new PDO('sqlite:' . DB_FILE, null, null, $options);
     $pdo->exec('PRAGMA foreign_keys = ON');
     $pdo->exec('PRAGMA journal_mode = WAL');
 
@@ -97,7 +117,7 @@ function db_run(string $sql, array $params = []): int
 
 function is_installed(): bool
 {
-    return is_file(DB_FILE) && is_file(LOCK_FILE);
+    return db_ready() && is_file(LOCK_FILE);
 }
 
 /** Redirect to the installer when the site has not been set up yet. */
@@ -120,8 +140,8 @@ function settings(bool $refresh = false): array
     static $cache = null;
     if ($cache === null || $refresh) {
         $cache = [];
-        foreach (db_all('SELECT key, value FROM settings') as $row) {
-            $cache[$row['key']] = $row['value'];
+        foreach (db_all('SELECT ' . db_name('key') . ' AS k, value FROM settings') as $row) {
+            $cache[$row['k']] = $row['value'];
         }
     }
     return $cache;
@@ -145,11 +165,7 @@ function setting_bool(string $key, bool $default = false): bool
 
 function setting_save(string $key, string $value): void
 {
-    db_run(
-        'INSERT INTO settings (key, value) VALUES (:k, :v)
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value',
-        [':k' => $key, ':v' => $value]
-    );
+    db_setting_put($key, $value);
 }
 
 /* ------------------------------------------------------------------- output */
@@ -464,13 +480,13 @@ function rate_limit(string $key, int $max, int $seconds): bool
     $since = date('Y-m-d H:i:s', time() - $seconds);
     db_run('DELETE FROM rate_hits WHERE created_at < :cut', [':cut' => date('Y-m-d H:i:s', time() - 86400)]);
     $row = db_one(
-        'SELECT COUNT(*) AS c FROM rate_hits WHERE key = :k AND created_at >= :since',
+        'SELECT COUNT(*) AS c FROM rate_hits WHERE ' . db_name('key') . ' = :k AND created_at >= :since',
         [':k' => $key, ':since' => $since]
     );
     if ((int) ($row['c'] ?? 0) >= $max) {
         return false;
     }
-    db_run('INSERT INTO rate_hits (key, created_at) VALUES (:k, :t)', [':k' => $key, ':t' => date('Y-m-d H:i:s')]);
+    db_run('INSERT INTO rate_hits (' . db_name('key') . ', created_at) VALUES (:k, :t)', [':k' => $key, ':t' => date('Y-m-d H:i:s')]);
     return true;
 }
 
