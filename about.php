@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-require __DIR__ . '/inc/bootstrap.php';
+require __DIR__ . '/app/bootstrap.php';
 require_installed();
-require __DIR__ . '/inc/layout.php';
+require __DIR__ . '/app/layout.php';
 
 $page     = site_head('about');
 $stats    = blocks('about', 'stats');

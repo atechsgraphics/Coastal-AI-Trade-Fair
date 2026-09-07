@@ -7,8 +7,8 @@ declare(strict_types=1);
  * administrator account. Once it has run it locks itself and can be deleted.
  */
 
-require __DIR__ . '/inc/bootstrap.php';
-require __DIR__ . '/inc/schema.php';
+require __DIR__ . '/app/bootstrap.php';
+require __DIR__ . '/database/schema.php';
 
 $errors = [];
 $done   = false;
@@ -20,7 +20,7 @@ if (is_installed()) {
         <p>This website has already been set up, so the installer is locked.</p>
         <p>If you need to start again, delete <code>data/site.db</code> and <code>data/installed.lock</code> on the server, then reload this page.</p>
         <div class="s-actions">
-          <a class="s-btn s-btn-primary" href="admin.php">Open the control panel</a>
+          <a class="s-btn s-btn-primary" href="admin/">Open the control panel</a>
           <a class="s-btn" href="index.php">View the website</a>
         </div>
         <p class="s-note">For security, delete <code>setup.php</code> from the server once the site is live.</p>
@@ -117,7 +117,7 @@ if ($done) {
         <p>The database has been created and loaded with the real 2026 event details: dates, venue, contact numbers, sponsors, packages, stall rates, payment details and the programme.</p>
         <p>Sign in to the control panel to change any of it — no code required.</p>
         <div class="s-actions">
-          <a class="s-btn s-btn-primary" href="admin.php">Sign in to the control panel</a>
+          <a class="s-btn s-btn-primary" href="admin/">Sign in to the control panel</a>
           <a class="s-btn" href="index.php">View the website</a>
         </div>
         <p class="s-note"><strong>One last step:</strong> delete <code>setup.php</code> from the server.</p>

@@ -6,7 +6,7 @@ declare(strict_types=1);
  * Submit the address of this file to Google Search Console once the site is live.
  */
 
-require __DIR__ . '/inc/bootstrap.php';
+require __DIR__ . '/app/bootstrap.php';
 require_installed();
 
 header('Content-Type: application/xml; charset=UTF-8');

@@ -7,16 +7,16 @@ declare(strict_types=1);
  * book once verified (or immediately, if verification is switched off).
  */
 
-require __DIR__ . '/inc/bootstrap.php';
+require __DIR__ . '/../app/bootstrap.php';
 require_installed();
-require __DIR__ . '/inc/layout.php';
-require __DIR__ . '/inc/client-ui.php';
+require __DIR__ . '/../app/layout.php';
+require __DIR__ . '/../app/client-ui.php';
 
 start_session();
 bk_require_platform();
 
 if (client_logged_in()) {
-    redirect('account.php');
+    redirect('booking/account.php');
 }
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
@@ -37,7 +37,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     } elseif (trim((string) ($_POST['website'] ?? '')) !== '') {
         // Honeypot: quietly pretend it worked.
         bk_flash('ok', 'Please check your email for the link that activates your account.');
-        redirect('login.php');
+        redirect('auth/login.php');
     } elseif (!rate_limit('register:' . client_ip(), 6, 3600)) {
         $error = 'Too many accounts have been created from this connection. Please try again later.';
     } elseif ($input['full_name'] === '') {
@@ -55,13 +55,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     if ($error === null && db_one('SELECT id FROM clients WHERE email = :e', [':e' => $input['email']])) {
         // Never reveal whether an address is registered.
         bk_flash('ok', 'Please check your email — we have sent you a link to finish setting up your account.');
-        redirect('login.php');
+        redirect('auth/login.php');
     }
 
     if ($error !== null) {
         bk_keep_input($input);
         bk_flash('error', $error);
-        redirect('register.php');
+        redirect('auth/register.php');
     }
 
     $now = date('Y-m-d H:i:s');
@@ -95,14 +95,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 . 'Please confirm your email address so we can send you booking confirmations, tickets and receipts. '
                 . 'This link works for the next 48 hours.',
             [],
-            [['text' => 'Confirm my email address', 'url' => bk_url('verify-email.php') . '?token=' . $token]],
+            [['text' => 'Confirm my email address', 'url' => bk_url('auth/verify-email.php') . '?token=' . $token]],
             'If you did not create this account you can ignore this message and nothing further will happen.'
         ),
     ]);
 
     if (bk_bool('bk_require_verified_email', true)) {
         bk_flash('ok', 'Your account has been created. Please open the email we have just sent and click the link to confirm your address.');
-        redirect('login.php');
+        redirect('auth/login.php');
     }
 
     client_login($input['email'], $password);
@@ -121,7 +121,7 @@ bk_hero('CLIENT ACCOUNTS', 'Create your {account.}', 'One account keeps every bo
     <?php bk_flash_render(); ?>
 
     <div class="bk-panel">
-      <form method="post" action="register.php" class="bk-form" autocomplete="on" novalidate>
+      <form method="post" action="<?= e(url('auth/register.php')) ?>" class="bk-form" autocomplete="on" novalidate>
         <?= csrf_field() ?>
 
         <div class="field-row">
@@ -162,7 +162,7 @@ bk_hero('CLIENT ACCOUNTS', 'Create your {account.}', 'One account keeps every bo
 
         <div class="bk-form-actions">
           <button class="btn btn-primary" type="submit">Create my account <span aria-hidden="true">→</span></button>
-          <p>Already registered? <a class="text-link" href="login.php">Sign in instead</a></p>
+          <p>Already registered? <a class="text-link" href="<?= e(url('auth/login.php')) ?>">Sign in instead</a></p>
         </div>
       </form>
     </div>

@@ -14,8 +14,10 @@ Options -Indexes
 ErrorDocument 404 /404.php
 
 # ---------------------------------------------------------------- security
-# The application code and the database are never served directly.
-RedirectMatch 404 ^/(.*/)?(inc|data)/.*$
+# The application code, the database and everything clients have uploaded are
+# never served directly. Only the folders holding pages and public assets are
+# reachable: assets, images, uploads, auth, booking, admin.
+RedirectMatch 404 ^/(.*/)?(app|core|database|storage|inc|data)/.*$
 
 <FilesMatch "\.(db|sqlite|sqlite3|lock|log|md)$">
   <IfModule mod_authz_core.c>
@@ -41,6 +43,22 @@ RedirectMatch 404 ^/(.*/)?(inc|data)/.*$
   # Old .html addresses keep working.
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteRule ^(index|about|programme|exhibit|packages|partners|contact)\.html$ $1.php [R=301,L]
+
+  # --- pages that moved into folders -------------------------------------
+  # Anything already shared, bookmarked or indexed keeps working. These are
+  # permanent redirects, so search engines follow the page to its new home.
+  RedirectMatch 301 ^/(.*/)?booking\.php$          /booking/
+  RedirectMatch 301 ^/(.*/)?admin\.php$            /admin/
+  RedirectMatch 301 ^/(.*/)?login\.php$            /auth/login.php
+  RedirectMatch 301 ^/(.*/)?register\.php$         /auth/register.php
+  RedirectMatch 301 ^/(.*/)?verify-email\.php$     /auth/verify-email.php
+  RedirectMatch 301 ^/(.*/)?forgot-password\.php$  /auth/forgot-password.php
+  RedirectMatch 301 ^/(.*/)?reset-password\.php$   /auth/reset-password.php
+  RedirectMatch 301 ^/(.*/)?account\.php$          /booking/account.php
+  RedirectMatch 301 ^/(.*/)?pay\.php$              /booking/pay.php
+  RedirectMatch 301 ^/(.*/)?download\.php$         /booking/download.php
+  RedirectMatch 301 ^/(.*/)?verify-ticket\.php$    /booking/verify-ticket.php
+  RedirectMatch 301 ^/(.*/)?booking-pdf\.php$      /admin/booking-pdf.php
 
   # Allow clean addresses such as /about as well as /about.php
   RewriteCond %{REQUEST_FILENAME} !-f

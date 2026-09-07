@@ -10,7 +10,7 @@ declare(strict_types=1);
  * so it still renders when something else is wrong.
  */
 
-require __DIR__ . '/inc/bootstrap.php';
+require __DIR__ . '/app/bootstrap.php';
 
 if (!is_installed()) {
     http_response_code(404);
@@ -20,7 +20,7 @@ if (!is_installed()) {
     exit;
 }
 
-require __DIR__ . '/inc/layout.php';
+require __DIR__ . '/app/layout.php';
 
 http_response_code(404);
 
@@ -50,8 +50,8 @@ site_header('404');
           <li><a class="text-link" href="<?= e($item['slug']) ?>.php"><?= e($item['nav_label']) ?></a></li>
         <?php endforeach; ?>
         <?php if (function_exists('bk_enabled') && bk_enabled()): ?>
-          <li><a class="text-link" href="booking.php">Book online</a></li>
-          <li><a class="text-link" href="account.php">My bookings</a></li>
+          <li><a class="text-link" href="booking/">Book online</a></li>
+          <li><a class="text-link" href="booking/account.php">My bookings</a></li>
         <?php endif; ?>
       </ul>
 

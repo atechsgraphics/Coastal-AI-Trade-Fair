@@ -10,7 +10,7 @@ declare(strict_types=1);
  * pages that need them.
  */
 
-require_once __DIR__ . '/migrate.php';
+require_once __DIR__ . '/../database/migrate.php';
 
 /* ============================================================ 1. SETTINGS */
 
@@ -337,7 +337,7 @@ function require_client(): array
     }
     start_session();
     $_SESSION['client_after_login'] = bk_current_url();
-    redirect('login.php');
+    redirect('auth/login.php');
 }
 
 /** The path + query of the current request, used for post-login redirects. */
@@ -348,13 +348,13 @@ function bk_current_url(): string
     $query = parse_url($uri, PHP_URL_QUERY);
     $file = basename($path);
     if ($file === '' || !preg_match('/^[a-z0-9_-]+\.php$/i', $file)) {
-        return 'account.php';
+        return 'booking/account.php';
     }
     return $file . ($query ? '?' . $query : '');
 }
 
 /** Where to send a client after they sign in. Always an internal page. */
-function bk_take_redirect(string $fallback = 'account.php'): string
+function bk_take_redirect(string $fallback = 'booking/account.php'): string
 {
     start_session();
     $target = (string) ($_SESSION['client_after_login'] ?? '');
@@ -363,7 +363,7 @@ function bk_take_redirect(string $fallback = 'account.php'): string
     if ($target === '' || !preg_match('#^[a-z0-9_-]+\.php(\?[^\s"\'<>]*)?$#i', $target)) {
         return $fallback;
     }
-    if (in_array(strtolower(explode('?', $target)[0]), ['admin.php', 'setup.php'], true)) {
+    if (in_array(strtolower(explode('?', $target)[0]), ['admin/', 'setup.php'], true)) {
         return $fallback;
     }
     return $target;

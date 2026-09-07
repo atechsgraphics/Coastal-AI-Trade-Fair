@@ -24,7 +24,7 @@ function eft_admin_handle_post(array $staff): bool
 
     $id = (int) ($_POST['id'] ?? 0);
     $booking = $id > 0 ? bk_booking($id) : null;
-    $back = 'admin.php?p=eft_bookings&action=view&id=' . $id;
+    $back = 'admin/?p=eft_bookings&action=view&id=' . $id;
     $staffName = (string) ($staff['name'] ?: $staff['username']);
 
     switch ($do) {
@@ -32,7 +32,7 @@ function eft_admin_handle_post(array $staff): bool
         case 'eft_approve':
             if (!$booking) {
                 admin_flash('error', 'That booking no longer exists.');
-                redirect('admin.php?p=eft_bookings');
+                redirect('admin/?p=eft_bookings');
             }
             $result = bk_approve_payment($booking, [
                 'amount_received' => (string) ($_POST['amount_received'] ?? ''),
@@ -49,7 +49,7 @@ function eft_admin_handle_post(array $staff): bool
         case 'eft_decline':
             if (!$booking) {
                 admin_flash('error', 'That booking no longer exists.');
-                redirect('admin.php?p=eft_bookings');
+                redirect('admin/?p=eft_bookings');
             }
             $result = bk_decline_payment($booking, (string) ($_POST['reason'] ?? ''), $staff);
             admin_log($result['ok'] ? 'declined proof of payment' : 'could not decline payment', (string) $booking['reference']);
@@ -61,12 +61,12 @@ function eft_admin_handle_post(array $staff): bool
             $result = eft_import_rates();
             admin_log('imported services from rates', $result['created'] . ' created');
             admin_flash($result['ok'] ? 'ok' : 'error', $result['message']);
-            redirect('admin.php?p=services');
+            redirect('admin/?p=services');
 
         /* -------------------------------- claim a proof for checking */
         case 'eft_under_review':
             if (!$booking) {
-                redirect('admin.php?p=eft_bookings');
+                redirect('admin/?p=eft_bookings');
             }
             db_run(
                 "UPDATE eft_payments SET status = 'under_review', updated_at = :u WHERE booking_id = :b",
@@ -90,7 +90,7 @@ function eft_admin_handle_post(array $staff): bool
         case 'eft_booking_save':
             if (!$booking) {
                 admin_flash('error', 'That booking no longer exists.');
-                redirect('admin.php?p=eft_bookings');
+                redirect('admin/?p=eft_bookings');
             }
 
             $status = (string) ($_POST['status'] ?? $booking['status']);
@@ -147,7 +147,7 @@ function eft_admin_handle_post(array $staff): bool
         /* -------------------------------------------------- move a booking */
         case 'eft_reschedule':
             if (!$booking) {
-                redirect('admin.php?p=eft_bookings');
+                redirect('admin/?p=eft_bookings');
             }
             $result = bk_reschedule(
                 $booking,
@@ -161,7 +161,7 @@ function eft_admin_handle_post(array $staff): bool
         /* --------------------------------------------------------- cancel */
         case 'eft_cancel':
             if (!$booking) {
-                redirect('admin.php?p=eft_bookings');
+                redirect('admin/?p=eft_bookings');
             }
             $result = bk_cancel_booking($booking, trim((string) ($_POST['reason'] ?? '')));
             admin_log('cancelled booking', (string) $booking['reference']);
@@ -171,7 +171,7 @@ function eft_admin_handle_post(array $staff): bool
         /* ------------------------------- resend emails / rebuild the PDFs */
         case 'eft_resend':
             if (!$booking) {
-                redirect('admin.php?p=eft_bookings');
+                redirect('admin/?p=eft_bookings');
             }
             $what = (string) ($_POST['what'] ?? '');
 
@@ -203,7 +203,7 @@ function eft_admin_handle_post(array $staff): bool
         /* ---------------------------- attach a proof for the client */
         case 'eft_admin_proof':
             if (!$booking) {
-                redirect('admin.php?p=eft_bookings');
+                redirect('admin/?p=eft_bookings');
             }
             $result = bk_upload_proof(
                 $booking,
@@ -224,7 +224,7 @@ function eft_admin_handle_post(array $staff): bool
         /* ----------------------- approve or decline a client's request */
         case 'eft_request':
             if (!$booking) {
-                redirect('admin.php?p=eft_bookings');
+                redirect('admin/?p=eft_bookings');
             }
             $request = db_one('SELECT * FROM booking_requests WHERE id = :id AND booking_id = :b', [
                 ':id' => (int) ($_POST['request_id'] ?? 0),
@@ -279,7 +279,7 @@ function eft_admin_handle_post(array $staff): bool
                         'We could not action that request',
                         'We have looked at your request for booking ' . $booking['reference'] . ' and cannot action it.',
                         bk_booking_facts($booking),
-                        [['text' => 'View my booking', 'url' => bk_url('account.php') . '?p=booking&id=' . $id]],
+                        [['text' => 'View my booking', 'url' => bk_url('booking/account.php') . '?p=booking&id=' . $id]],
                         $response !== '' ? $response : 'Please contact us and we will find a way forward together.'
                     ),
                 ]);
@@ -308,13 +308,13 @@ function eft_admin_handle_post(array $staff): bool
 
             if (!$result['ok']) {
                 admin_flash('error', $result['message']);
-                redirect('admin.php?p=eft_bookings&action=new&service=' . (int) ($_POST['service_id'] ?? 0)
+                redirect('admin/?p=eft_bookings&action=new&service=' . (int) ($_POST['service_id'] ?? 0)
                     . '&date=' . rawurlencode((string) ($_POST['date'] ?? '')));
             }
 
             admin_log('created booking', (string) $result['booking']['reference']);
             admin_flash('ok', 'Booking ' . $result['booking']['reference'] . ' created.');
-            redirect('admin.php?p=eft_bookings&action=view&id=' . (int) $result['booking']['id']);
+            redirect('admin/?p=eft_bookings&action=view&id=' . (int) $result['booking']['id']);
 
         /* ---------------------------------------------- edit a client */
         case 'eft_client_save':
@@ -322,7 +322,7 @@ function eft_admin_handle_post(array $staff): bool
             $client = db_one('SELECT * FROM clients WHERE id = :id', [':id' => $clientId]);
             if (!$client) {
                 admin_flash('error', 'That client account no longer exists.');
-                redirect('admin.php?p=eft_clients');
+                redirect('admin/?p=eft_clients');
             }
 
             if (isset($_POST['send_reset'])) {
@@ -336,14 +336,14 @@ function eft_admin_handle_post(array $staff): bool
                         'Reset your password',
                         'Our team has sent you a link to set a new password for your account. It works for one hour.',
                         [],
-                        [['text' => 'Choose a new password', 'url' => bk_url('reset-password.php') . '?token=' . $token]]
+                        [['text' => 'Choose a new password', 'url' => bk_url('auth/reset-password.php') . '?token=' . $token]]
                     ),
                 ]);
                 admin_log('sent a password reset', (string) $client['email']);
                 admin_flash($sent ? 'ok' : 'error', $sent
                     ? 'A reset link has been emailed to ' . $client['email'] . '.'
                     : 'That email could not be sent. Check Site settings, Email delivery.');
-                redirect('admin.php?p=eft_clients&action=view&id=' . $clientId);
+                redirect('admin/?p=eft_clients&action=view&id=' . $clientId);
             }
 
             $status = (string) ($_POST['status'] ?? 'active') === 'suspended' ? 'suspended' : 'active';
@@ -374,7 +374,7 @@ function eft_admin_handle_post(array $staff): bool
 
             admin_log('updated client', (string) $client['email']);
             admin_flash('ok', 'Client account saved.');
-            redirect('admin.php?p=eft_clients&action=view&id=' . $clientId);
+            redirect('admin/?p=eft_clients&action=view&id=' . $clientId);
     }
 
     return false;

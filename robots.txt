@@ -2,22 +2,23 @@ User-agent: *
 Allow: /
 
 # Nothing below is useful to a search engine.
-Disallow: /admin.php
+Disallow: /admin/
 Disallow: /setup.php
-Disallow: /inc/
-Disallow: /data/
+Disallow: /app/
+Disallow: /database/
+Disallow: /storage/
 
 # Private booking pages. The booking page itself (/booking.php) is public and
 # should be indexed; everything here is personal to one client.
-Disallow: /account.php
-Disallow: /pay.php
-Disallow: /download.php
-Disallow: /verify-ticket.php
-Disallow: /login.php
-Disallow: /register.php
-Disallow: /verify-email.php
-Disallow: /forgot-password.php
-Disallow: /reset-password.php
+Disallow: /booking/account.php
+Disallow: /booking/pay.php
+Disallow: /booking/download.php
+Disallow: /booking/verify-ticket.php
+Disallow: /auth/login.php
+Disallow: /auth/register.php
+Disallow: /auth/verify-email.php
+Disallow: /auth/forgot-password.php
+Disallow: /auth/reset-password.php
 
 # Once the site is live, add the full address of the sitemap here, e.g.
 # Sitemap: https://coastalaitradefair.com/sitemap.php

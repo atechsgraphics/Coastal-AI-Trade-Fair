@@ -11,11 +11,11 @@ declare(strict_types=1);
  * a ticket as checked in requires a signed-in member of staff.
  */
 
-require __DIR__ . '/inc/bootstrap.php';
+require __DIR__ . '/../app/bootstrap.php';
 require_installed();
-require __DIR__ . '/inc/layout.php';
-require __DIR__ . '/inc/client-ui.php';
-require __DIR__ . '/inc/admin-lib.php';
+require __DIR__ . '/../app/layout.php';
+require __DIR__ . '/../app/client-ui.php';
+require __DIR__ . '/../app/admin-lib.php';
 
 start_session();
 bk_require_platform();
@@ -31,11 +31,11 @@ $message = '';
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['do'] ?? '') === 'checkin') {
     if (!csrf_check()) {
         bk_flash('error', 'Your session expired. Please scan again.');
-        redirect('verify-ticket.php');
+        redirect('booking/verify-ticket.php');
     }
     if (!$staff) {
         bk_flash('error', 'Only signed-in staff can check a ticket in.');
-        redirect('verify-ticket.php?code=' . rawurlencode($query));
+        redirect('booking/verify-ticket.php?code=' . rawurlencode($query));
     }
 
     $target = db_one('SELECT * FROM booking_tickets WHERE id = :id', [':id' => (int) ($_POST['ticket_id'] ?? 0)]);
@@ -54,7 +54,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['do'] ?? '') ===
         bk_flash('error', 'That ticket could not be checked in.');
     }
 
-    redirect('verify-ticket.php?code=' . rawurlencode((string) ($target['verification_code'] ?? $query)));
+    redirect('booking/verify-ticket.php?code=' . rawurlencode((string) ($target['verification_code'] ?? $query)));
 }
 
 /* --------------------------------------------------------------- lookup */
@@ -125,7 +125,7 @@ bk_hero('TICKET VERIFICATION', 'Check a {ticket.}', 'Scan the QR code on a ticke
     <?php bk_flash_render(); ?>
 
     <div class="bk-panel">
-      <form method="get" action="verify-ticket.php" class="bk-form bk-verify-form">
+      <form method="get" action="<?= e(url('booking/verify-ticket.php')) ?>" class="bk-form bk-verify-form">
         <label class="field"><span>Verification code, ticket number or booking reference</span>
           <input type="text" name="code" maxlength="60" autocomplete="off" autocapitalize="characters"
                  spellcheck="false" placeholder="7K2M-9QXA" value="<?= e($query) ?>" autofocus>
@@ -164,7 +164,7 @@ bk_hero('TICKET VERIFICATION', 'Check a {ticket.}', 'Scan the QR code on a ticke
 
         <?php if ($staff): ?>
           <?php if ((string) $ticket['status'] === 'valid' && $verdict !== 'bad'): ?>
-            <form method="post" action="verify-ticket.php" class="bk-form">
+            <form method="post" action="<?= e(url('booking/verify-ticket.php')) ?>" class="bk-form">
               <?= csrf_field() ?>
               <input type="hidden" name="do" value="checkin">
               <input type="hidden" name="ticket_id" value="<?= (int) $ticket['id'] ?>">
@@ -172,9 +172,9 @@ bk_hero('TICKET VERIFICATION', 'Check a {ticket.}', 'Scan the QR code on a ticke
               <button class="btn btn-primary" type="submit">Check this guest in</button>
             </form>
           <?php endif; ?>
-          <p class="bk-muted"><a class="text-link" href="admin.php?p=eft_bookings&amp;action=view&amp;id=<?= (int) $booking['id'] ?>">Open the full booking in the control panel →</a></p>
+          <p class="bk-muted"><a class="text-link" href="<?= e(url('admin/')) ?>?p=eft_bookings&amp;action=view&amp;id=<?= (int) $booking['id'] ?>">Open the full booking in the control panel →</a></p>
         <?php else: ?>
-          <p class="bk-muted"><a class="text-link" href="admin.php">Staff: sign in to check this guest in.</a></p>
+          <p class="bk-muted"><a class="text-link" href="<?= e(url('admin/')) ?>">Staff: sign in to check this guest in.</a></p>
         <?php endif; ?>
       <?php endif; ?>
     </div>

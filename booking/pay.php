@@ -9,10 +9,10 @@ declare(strict_types=1);
  *   • the emailed link, reference plus its token  (?ref=ATF-26F3K9&t=…)
  */
 
-require __DIR__ . '/inc/bootstrap.php';
+require __DIR__ . '/../app/bootstrap.php';
 require_installed();
-require __DIR__ . '/inc/layout.php';
-require __DIR__ . '/inc/client-ui.php';
+require __DIR__ . '/../app/layout.php';
+require __DIR__ . '/../app/client-ui.php';
 
 start_session();
 bk_require_platform();
@@ -54,11 +54,11 @@ $linkQuery = $viaToken
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     if (!csrf_check()) {
         bk_flash('error', 'Your session expired before the file was sent. Please choose the file again.');
-        redirect('pay.php?' . $linkQuery);
+        redirect('booking/pay.php?' . $linkQuery);
     }
     if (!rate_limit('proof:' . client_ip(), 15, 3600)) {
         bk_flash('error', 'Too many uploads from this connection. Please wait a while and try again.');
-        redirect('pay.php?' . $linkQuery);
+        redirect('booking/pay.php?' . $linkQuery);
     }
 
     $client = client_user();
@@ -76,7 +76,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     );
 
     bk_flash($result['ok'] ? 'ok' : 'error', $result['message']);
-    redirect('pay.php?' . $linkQuery);
+    redirect('booking/pay.php?' . $linkQuery);
 }
 
 /* ------------------------------------------------------------------ render */
@@ -150,7 +150,7 @@ bk_hero(
             </div>
           <?php endif; ?>
 
-          <form method="post" action="pay.php" class="bk-form" enctype="multipart/form-data" novalidate>
+          <form method="post" action="<?= e(url('booking/pay.php')) ?>" class="bk-form" enctype="multipart/form-data" novalidate>
             <?= csrf_field() ?>
             <?php if ($viaToken): ?>
               <input type="hidden" name="ref" value="<?= e((string) $booking['reference']) ?>">
@@ -200,8 +200,8 @@ bk_hero(
 
           <?php if ((string) $booking['status'] === 'confirmed'): ?>
             <p>
-              <a class="btn btn-primary" href="download.php?kind=ticket&amp;<?= e($linkQuery) ?>">Download my ticket <span aria-hidden="true">↓</span></a>
-              <a class="btn btn-ghost" href="download.php?kind=receipt&amp;<?= e($linkQuery) ?>">Download my receipt <span aria-hidden="true">↓</span></a>
+              <a class="btn btn-primary" href="<?= e(url('booking/download.php')) ?>?kind=ticket&amp;<?= e($linkQuery) ?>">Download my ticket <span aria-hidden="true">↓</span></a>
+              <a class="btn btn-ghost" href="<?= e(url('booking/download.php')) ?>?kind=receipt&amp;<?= e($linkQuery) ?>">Download my receipt <span aria-hidden="true">↓</span></a>
             </p>
           <?php endif; ?>
         <?php endif; ?>
@@ -242,9 +242,9 @@ bk_hero(
         <?php bk_facts_render(bk_booking_facts($booking), 'detail-list bk-aside-facts'); ?>
         <p>
           <?php if (client_logged_in()): ?>
-            <a class="btn btn-ghost" href="account.php?p=booking&amp;id=<?= (int) $booking['id'] ?>">Open in my account <span aria-hidden="true">→</span></a>
+            <a class="btn btn-ghost" href="<?= e(url('booking/account.php')) ?>?p=booking&amp;id=<?= (int) $booking['id'] ?>">Open in my account <span aria-hidden="true">→</span></a>
           <?php else: ?>
-            <a class="btn btn-ghost" href="login.php">Sign in to my account <span aria-hidden="true">→</span></a>
+            <a class="btn btn-ghost" href="<?= e(url('auth/login.php')) ?>">Sign in to my account <span aria-hidden="true">→</span></a>
           <?php endif; ?>
         </p>
         <p class="bk-muted">Questions? Email <a href="mailto:<?= e(setting('email_primary')) ?>"><?= e(setting('email_primary')) ?></a><?php

@@ -3,10 +3,10 @@ declare(strict_types=1);
 
 /** Choose a new password from an emailed reset link. */
 
-require __DIR__ . '/inc/bootstrap.php';
+require __DIR__ . '/../app/bootstrap.php';
 require_installed();
-require __DIR__ . '/inc/layout.php';
-require __DIR__ . '/inc/client-ui.php';
+require __DIR__ . '/../app/layout.php';
+require __DIR__ . '/../app/client-ui.php';
 
 start_session();
 bk_require_platform();
@@ -29,7 +29,7 @@ if ($client && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
     if ($error !== null) {
         bk_flash('error', $error);
-        redirect('reset-password.php?token=' . rawurlencode($token));
+        redirect('auth/reset-password.php?token=' . rawurlencode($token));
     }
 
     db_run(
@@ -51,14 +51,14 @@ if ($client && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             'Your password has been changed',
             'The password for your account was changed just now.',
             [['When', date('d F Y \a\t H:i')]],
-            [['text' => 'Sign in', 'url' => bk_url('login.php')]],
+            [['text' => 'Sign in', 'url' => bk_url('auth/login.php')]],
             'If this was not you, please contact us straight away on ' . setting('email_primary') . '.'
         ),
     ]);
 
     client_logout();
     bk_flash('ok', 'Your password has been changed. Please sign in with it.');
-    redirect('login.php');
+    redirect('auth/login.php');
 }
 
 $page = site_head('reset-password', 'Choose a new password', '', true);
@@ -75,10 +75,10 @@ bk_hero('CLIENT ACCOUNTS', 'Choose a new {password.}', '');
         <div class="alert alert-error" role="alert">
           That reset link is no longer valid. Links expire after an hour and can only be used once.
         </div>
-        <p><a class="btn btn-primary" href="forgot-password.php">Ask for a new link</a></p>
+        <p><a class="btn btn-primary" href="<?= e(url('auth/forgot-password.php')) ?>">Ask for a new link</a></p>
       <?php else: ?>
         <p class="bk-panel-lead">Choose a new password for <strong><?= e((string) $client['email']) ?></strong>.</p>
-        <form method="post" action="reset-password.php" class="bk-form" novalidate>
+        <form method="post" action="<?= e(url('auth/reset-password.php')) ?>" class="bk-form" novalidate>
           <?= csrf_field() ?>
           <input type="hidden" name="token" value="<?= e($token) ?>">
 

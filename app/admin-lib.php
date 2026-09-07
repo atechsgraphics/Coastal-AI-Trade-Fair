@@ -31,7 +31,7 @@ function require_admin(): array
 {
     $user = admin_user();
     if (!$user) {
-        redirect('admin.php?p=login');
+        redirect('admin/?p=login');
     }
     return $user;
 }
@@ -46,7 +46,7 @@ function require_owner(): void
 {
     if (!is_owner()) {
         admin_flash('error', 'Only an administrator can open that section.');
-        redirect('admin.php');
+        redirect('admin/');
     }
 }
 
@@ -931,7 +931,7 @@ function admin_health(): array
     $checks[] = [
         'label' => 'Database folder is writable',
         'ok'    => is_writable(DATA_PATH) && is_writable(DB_FILE),
-        'hint'  => 'The /data folder must be writable or content changes cannot be saved.',
+        'hint'  => 'The /storage folder must be writable or content changes cannot be saved.',
     ];
     $checks[] = [
         'label' => 'Installer has been locked',

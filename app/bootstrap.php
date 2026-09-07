@@ -9,7 +9,7 @@ declare(strict_types=1);
  */
 
 define('ROOT_PATH', dirname(__DIR__));
-define('DATA_PATH', ROOT_PATH . '/data');
+define('DATA_PATH', ROOT_PATH . '/storage');
 define('UPLOAD_PATH', ROOT_PATH . '/uploads');
 define('LOCK_FILE', DATA_PATH . '/installed.lock');
 
@@ -17,7 +17,7 @@ define('LOCK_FILE', DATA_PATH . '/installed.lock');
  * Resolve the database file name.
  *
  * A fresh install gets an unguessable name (site-<random>.db) recorded in
- * data/config.php. The folder is also blocked by .htaccess / web.config, but
+ * storage/config.php. The folder is also blocked by .htaccess / web.config, but
  * this means the database still cannot be downloaded on a server that ignores
  * those files. Installs that already use the plain name keep working.
  */
@@ -225,8 +225,74 @@ function img_src(?string $path, string $fallback = ''): string
     return ltrim($path, '/');
 }
 
+/* ------------------------------------------------------------ addresses */
+
+/**
+ * The web address of the site's own root, ending in a slash.
+ *
+ * Pages live at different depths — index.php at the top, auth/login.php and
+ * booking/pay.php one level down — so a link written as "about.php" cannot be
+ * trusted to mean the same thing everywhere. Everything is written relative to
+ * the site root instead and passed through url().
+ *
+ * Works whether the site is the whole domain or sits in a subfolder, as it
+ * does under XAMPP.
+ */
+function base_url(): string
+{
+    static $base = null;
+    if ($base !== null) {
+        return $base;
+    }
+
+    $scriptName = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php'));
+    $webDir = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
+
+    // Climb back up by however many folders the running script sits below the
+    // site root, so the answer is the same from every page.
+    $root = realpath(ROOT_PATH);
+    $here = isset($_SERVER['SCRIPT_FILENAME']) ? realpath(dirname((string) $_SERVER['SCRIPT_FILENAME'])) : false;
+
+    if ($root !== false && $here !== false && str_starts_with($here, $root)) {
+        $inside = trim(str_replace('\\', '/', substr($here, strlen($root))), '/');
+        if ($inside !== '') {
+            foreach (explode('/', $inside) as $ignored) {
+                $webDir = rtrim(str_replace('\\', '/', dirname($webDir)), '/');
+            }
+        }
+    }
+
+    $base = ($webDir === '' ? '' : $webDir) . '/';
+    return $base;
+}
+
+/** A link to somewhere on this site, written from the site root. */
+function url(string $path = ''): string
+{
+    $path = ltrim($path, '/');
+    if ($path !== '' && preg_match('#^(https?:)?//#i', $path)) {
+        return $path;
+    }
+    return base_url() . $path;
+}
+
+/** Where a page in the pages table actually lives. */
+function page_url(string $slug): string
+{
+    $special = [
+        'home'    => 'index.php',
+        'booking' => 'booking/',
+    ];
+    return url($special[$slug] ?? $slug . '.php');
+}
+
 function redirect(string $url): void
 {
+    // A bare path is always meant from the site root, never from the folder
+    // the current script happens to be in.
+    if (!preg_match('#^(https?:)?//#i', $url) && !str_starts_with($url, '/')) {
+        $url = url($url);
+    }
     header('Location: ' . $url, true, 303);
     exit;
 }

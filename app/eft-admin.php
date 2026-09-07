@@ -189,7 +189,7 @@ function eft_admin_setting_groups(): array
                 'bk_currency'               => ['label' => 'Currency symbol', 'type' => 'text', 'placeholder' => 'N$'],
                 'bk_reference_prefix'       => ['label' => 'Booking reference prefix', 'type' => 'text', 'placeholder' => 'ATF', 'help' => 'Letters and numbers only. References look like ATF-4K7P2M.'],
                 'nav_cta_text'              => ['label' => 'Menu button text', 'type' => 'text', 'placeholder' => 'Book online', 'help' => 'The highlighted button at the end of the menu. Leave blank to hide it.'],
-                'nav_cta_link'              => ['label' => 'Menu button link', 'type' => 'text', 'placeholder' => 'booking.php', 'help' => 'booking.php for the online booking system, book.php for the exhibitor registration form.'],
+                'nav_cta_link'              => ['label' => 'Menu button link', 'type' => 'text', 'placeholder' => 'booking/', 'help' => 'booking.php for the online booking system, book.php for the exhibitor registration form.'],
                 'bk_site_url'               => ['label' => 'Website address', 'type' => 'url', 'placeholder' => 'https://www.example.na', 'help' => 'Used for the links in emails and the QR code on every ticket. Leave blank to work it out from the current address — but set it before going live so tickets are always right.'],
                 'bk_payment_deadline_hours' => ['label' => 'Hours a booking is held for payment', 'type' => 'number'],
                 'bk_bank_swift'             => ['label' => 'SWIFT / BIC code', 'type' => 'text', 'help' => 'Optional, for payments from outside the country.'],
@@ -287,8 +287,8 @@ function eft_admin_bookings_view(): void
     <p>Every online booking, its EFT payment and the proof behind it.</p>
   </div>
   <div class="a-head-actions">
-    <a class="a-btn a-btn-primary" href="admin.php?p=eft_bookings&amp;action=new">+ New booking</a>
-    <a class="a-btn a-btn-ghost" href="admin.php?p=eft_bookings&amp;action=export<?= e(eft_filter_query($filters)) ?>">Download CSV ↓</a>
+    <a class="a-btn a-btn-primary" href="?p=eft_bookings&amp;action=new">+ New booking</a>
+    <a class="a-btn a-btn-ghost" href="?p=eft_bookings&amp;action=export<?= e(eft_filter_query($filters)) ?>">Download CSV ↓</a>
   </div>
 </div>
 
@@ -339,12 +339,12 @@ function eft_admin_bookings_view(): void
   <input type="date" id="fto" name="to" value="<?= e($filters['to']) ?>">
 
   <button class="a-btn a-btn-small a-btn-primary" type="submit">Filter</button>
-  <a class="a-btn a-btn-small" href="admin.php?p=eft_bookings">Clear</a>
+  <a class="a-btn a-btn-small" href="?p=eft_bookings">Clear</a>
 </form>
 
 <div class="a-card a-card-flush">
   <?php if (!$rows): ?>
-    <p class="a-empty">No bookings match that. <a href="admin.php?p=eft_bookings">Show them all</a>.</p>
+    <p class="a-empty">No bookings match that. <a href="?p=eft_bookings">Show them all</a>.</p>
   <?php else: ?>
     <table class="a-table a-table-list">
       <thead>
@@ -363,7 +363,7 @@ function eft_admin_bookings_view(): void
           <td><?= eft_pill((string) $row['status']) ?></td>
           <td class="a-right a-actions">
             <a class="a-btn a-btn-small<?= in_array((string) $row['status'], ['proof_submitted', 'under_review'], true) ? ' a-btn-primary' : '' ?>"
-               href="admin.php?p=eft_bookings&amp;action=view&amp;id=<?= (int) $row['id'] ?>">
+               href="?p=eft_bookings&amp;action=view&amp;id=<?= (int) $row['id'] ?>">
               <?= in_array((string) $row['status'], ['proof_submitted', 'under_review'], true) ? 'Review' : 'Open' ?>
             </a>
           </td>
@@ -494,12 +494,12 @@ function eft_admin_booking_view(int $id): void
   </div>
   <div class="a-head-actions">
     <?php if ($ticket && (string) $ticket['file_name'] !== ''): ?>
-      <a class="a-btn a-btn-ghost" href="download.php?kind=ticket&amp;booking=<?= $id ?>&amp;view=1" target="_blank" rel="noopener">Ticket ↗</a>
+      <a class="a-btn a-btn-ghost" href="<?= e(url('booking/download.php')) ?>?kind=ticket&amp;booking=<?= $id ?>&amp;view=1" target="_blank" rel="noopener">Ticket ↗</a>
     <?php endif; ?>
     <?php if ($receipt && (string) $receipt['file_name'] !== ''): ?>
-      <a class="a-btn a-btn-ghost" href="download.php?kind=receipt&amp;booking=<?= $id ?>&amp;view=1" target="_blank" rel="noopener">Receipt ↗</a>
+      <a class="a-btn a-btn-ghost" href="<?= e(url('booking/download.php')) ?>?kind=receipt&amp;booking=<?= $id ?>&amp;view=1" target="_blank" rel="noopener">Receipt ↗</a>
     <?php endif; ?>
-    <a class="a-btn a-btn-ghost" href="admin.php?p=eft_bookings">← All bookings</a>
+    <a class="a-btn a-btn-ghost" href="?p=eft_bookings">← All bookings</a>
   </div>
 </div>
 
@@ -516,7 +516,7 @@ function eft_admin_booking_view(int $id): void
       <p class="a-quote"><?= nl2br(e((string) $pending['reason'])) ?></p>
     <?php endif; ?>
 
-    <form method="post" action="admin.php?p=eft_bookings&amp;action=view&amp;id=<?= $id ?>" class="a-inline-form">
+    <form method="post" action="?p=eft_bookings&amp;action=view&amp;id=<?= $id ?>" class="a-inline-form">
       <?= csrf_field() ?>
       <input type="hidden" name="do" value="eft_request">
       <input type="hidden" name="id" value="<?= $id ?>">
@@ -587,8 +587,8 @@ function eft_admin_booking_view(int $id): void
               <?php endif; ?>
             </div>
             <span class="a-proof-state"><?= e(ucfirst((string) $proof['status'])) ?></span>
-            <a class="a-btn a-btn-small" href="download.php?kind=proof&amp;id=<?= (int) $proof['id'] ?>&amp;view=1" target="_blank" rel="noopener">View</a>
-            <a class="a-btn a-btn-small" href="download.php?kind=proof&amp;id=<?= (int) $proof['id'] ?>">↓</a>
+            <a class="a-btn a-btn-small" href="<?= e(url('booking/download.php')) ?>?kind=proof&amp;id=<?= (int) $proof['id'] ?>&amp;view=1" target="_blank" rel="noopener">View</a>
+            <a class="a-btn a-btn-small" href="<?= e(url('booking/download.php')) ?>?kind=proof&amp;id=<?= (int) $proof['id'] ?>">↓</a>
           </li>
         <?php endforeach; ?>
       </ul>
@@ -600,7 +600,7 @@ function eft_admin_booking_view(int $id): void
         <p class="a-note">No proof of payment has been uploaded yet. You can still approve the payment if you have confirmed the money in the bank yourself — record the details below.</p>
       <?php endif; ?>
 
-      <form method="post" action="admin.php?p=eft_bookings&amp;action=view&amp;id=<?= $id ?>">
+      <form method="post" action="?p=eft_bookings&amp;action=view&amp;id=<?= $id ?>">
         <?= csrf_field() ?>
         <input type="hidden" name="do" value="eft_approve">
         <input type="hidden" name="id" value="<?= $id ?>">
@@ -638,7 +638,7 @@ function eft_admin_booking_view(int $id): void
       </form>
 
       <?php if ((string) $booking['status'] === 'proof_submitted'): ?>
-        <form method="post" action="admin.php?p=eft_bookings&amp;action=view&amp;id=<?= $id ?>" class="a-inline-form">
+        <form method="post" action="?p=eft_bookings&amp;action=view&amp;id=<?= $id ?>" class="a-inline-form">
           <?= csrf_field() ?>
           <input type="hidden" name="do" value="eft_under_review">
           <input type="hidden" name="id" value="<?= $id ?>">
@@ -649,7 +649,7 @@ function eft_admin_booking_view(int $id): void
         </form>
       <?php endif; ?>
 
-      <form method="post" action="admin.php?p=eft_bookings&amp;action=view&amp;id=<?= $id ?>" class="a-decline-form">
+      <form method="post" action="?p=eft_bookings&amp;action=view&amp;id=<?= $id ?>" class="a-decline-form">
         <?= csrf_field() ?>
         <input type="hidden" name="do" value="eft_decline">
         <input type="hidden" name="id" value="<?= $id ?>">
@@ -664,7 +664,7 @@ function eft_admin_booking_view(int $id): void
         </div>
       </form>
     <?php elseif ((string) $booking['status'] === 'declined'): ?>
-      <form method="post" action="admin.php?p=eft_bookings&amp;action=view&amp;id=<?= $id ?>">
+      <form method="post" action="?p=eft_bookings&amp;action=view&amp;id=<?= $id ?>">
         <?= csrf_field() ?>
         <input type="hidden" name="do" value="eft_reopen">
         <input type="hidden" name="id" value="<?= $id ?>">
@@ -675,7 +675,7 @@ function eft_admin_booking_view(int $id): void
     <?php endif; ?>
 
     <h3 class="a-sub">Upload a proof on the client's behalf</h3>
-    <form method="post" action="admin.php?p=eft_bookings&amp;action=view&amp;id=<?= $id ?>" enctype="multipart/form-data">
+    <form method="post" action="?p=eft_bookings&amp;action=view&amp;id=<?= $id ?>" enctype="multipart/form-data">
       <?= csrf_field() ?>
       <input type="hidden" name="do" value="eft_admin_proof">
       <input type="hidden" name="id" value="<?= $id ?>">
@@ -694,7 +694,7 @@ function eft_admin_booking_view(int $id): void
   <section class="a-card">
     <h2>Booking</h2>
 
-    <form method="post" action="admin.php?p=eft_bookings&amp;action=view&amp;id=<?= $id ?>">
+    <form method="post" action="?p=eft_bookings&amp;action=view&amp;id=<?= $id ?>">
       <?= csrf_field() ?>
       <input type="hidden" name="do" value="eft_booking_save">
       <input type="hidden" name="id" value="<?= $id ?>">
@@ -746,7 +746,7 @@ function eft_admin_booking_view(int $id): void
     </form>
 
     <h3 class="a-sub">Move this booking</h3>
-    <form method="post" action="admin.php?p=eft_bookings&amp;action=view&amp;id=<?= $id ?>">
+    <form method="post" action="?p=eft_bookings&amp;action=view&amp;id=<?= $id ?>">
       <?= csrf_field() ?>
       <input type="hidden" name="do" value="eft_reschedule">
       <input type="hidden" name="id" value="<?= $id ?>">
@@ -765,7 +765,7 @@ function eft_admin_booking_view(int $id): void
     </form>
 
     <h3 class="a-sub">Send something to the client</h3>
-    <form method="post" action="admin.php?p=eft_bookings&amp;action=view&amp;id=<?= $id ?>" class="a-inline-form">
+    <form method="post" action="?p=eft_bookings&amp;action=view&amp;id=<?= $id ?>" class="a-inline-form">
       <?= csrf_field() ?>
       <input type="hidden" name="do" value="eft_resend">
       <input type="hidden" name="id" value="<?= $id ?>">
@@ -783,7 +783,7 @@ function eft_admin_booking_view(int $id): void
     </form>
 
     <h3 class="a-sub">Cancel</h3>
-    <form method="post" action="admin.php?p=eft_bookings&amp;action=view&amp;id=<?= $id ?>">
+    <form method="post" action="?p=eft_bookings&amp;action=view&amp;id=<?= $id ?>">
       <?= csrf_field() ?>
       <input type="hidden" name="do" value="eft_cancel">
       <input type="hidden" name="id" value="<?= $id ?>">
@@ -807,7 +807,7 @@ function eft_admin_booking_view(int $id): void
       <tbody>
         <tr><th>Account</th><td>
           <?php if ($client): ?>
-            <a href="admin.php?p=eft_clients&amp;action=view&amp;id=<?= (int) $client['id'] ?>"><?= e((string) $client['full_name']) ?></a>
+            <a href="?p=eft_clients&amp;action=view&amp;id=<?= (int) $client['id'] ?>"><?= e((string) $client['full_name']) ?></a>
             <small><?= e((string) $client['email']) ?>
               <?= trim((string) $client['email_verified_at']) !== '' ? '· confirmed' : '· not confirmed' ?></small>
           <?php else: ?>
@@ -920,11 +920,11 @@ function eft_admin_new_booking_view(): void
     <h1>New booking</h1>
     <p>Create a booking for somebody who phoned, emailed or walked in. It follows exactly the same EFT workflow.</p>
   </div>
-  <a class="a-btn a-btn-ghost" href="admin.php?p=eft_bookings">← All bookings</a>
+  <a class="a-btn a-btn-ghost" href="?p=eft_bookings">← All bookings</a>
 </div>
 
 <?php if (!$services): ?>
-  <div class="a-card"><p class="a-empty">Add a service first, under <a href="admin.php?p=services">Services</a>.</p></div>
+  <div class="a-card"><p class="a-empty">Add a service first, under <a href="?p=services">Services</a>.</p></div>
 <?php else: ?>
 
 <form class="a-filter" method="get">
@@ -950,7 +950,7 @@ function eft_admin_new_booking_view(): void
     <?php if (!$slots): ?>
       <p class="a-empty a-empty-tight">No slots that day — check the opening hours and blocked dates for this service.</p>
     <?php else: ?>
-      <form method="post" action="admin.php?p=eft_bookings&amp;action=new">
+      <form method="post" action="?p=eft_bookings&amp;action=new">
         <?= csrf_field() ?>
         <input type="hidden" name="do" value="eft_new_booking">
         <input type="hidden" name="service_id" value="<?= (int) $service['id'] ?>">
@@ -1033,8 +1033,8 @@ function eft_admin_calendar_view(): void
     <p>Confirmed and pending bookings, day by day.</p>
   </div>
   <div class="a-head-actions">
-    <a class="a-btn a-btn-ghost" href="admin.php?p=eft_calendar&amp;m=<?= e($first->modify('-1 month')->format('Y-m')) ?>&amp;service=<?= $serviceId ?>">← <?= e($first->modify('-1 month')->format('M Y')) ?></a>
-    <a class="a-btn a-btn-ghost" href="admin.php?p=eft_calendar&amp;m=<?= e($first->modify('+1 month')->format('Y-m')) ?>&amp;service=<?= $serviceId ?>"><?= e($first->modify('+1 month')->format('M Y')) ?> →</a>
+    <a class="a-btn a-btn-ghost" href="?p=eft_calendar&amp;m=<?= e($first->modify('-1 month')->format('Y-m')) ?>&amp;service=<?= $serviceId ?>">← <?= e($first->modify('-1 month')->format('M Y')) ?></a>
+    <a class="a-btn a-btn-ghost" href="?p=eft_calendar&amp;m=<?= e($first->modify('+1 month')->format('Y-m')) ?>&amp;service=<?= $serviceId ?>"><?= e($first->modify('+1 month')->format('M Y')) ?> →</a>
   </div>
 </div>
 
@@ -1071,13 +1071,13 @@ function eft_admin_calendar_view(): void
           <span class="a-cal-day"><?= $dayNumber ?></span>
           <?php foreach (array_slice($entries, 0, 4) as $entry): ?>
             <a class="a-cal-item is-<?= e(bk_status_tone((string) $entry['status'])) ?>"
-               href="admin.php?p=eft_bookings&amp;action=view&amp;id=<?= (int) $entry['id'] ?>"
+               href="?p=eft_bookings&amp;action=view&amp;id=<?= (int) $entry['id'] ?>"
                title="<?= e((string) $entry['reference'] . ' · ' . $entry['contact_name'] . ' · ' . bk_status_label((string) $entry['status'])) ?>">
               <b><?= e((string) $entry['start_time']) ?></b> <?= e(mb_strimwidth((string) $entry['contact_name'], 0, 16, '…')) ?>
             </a>
           <?php endforeach; ?>
           <?php if (count($entries) > 4): ?>
-            <a class="a-cal-more" href="admin.php?p=eft_bookings&amp;from=<?= e($date) ?>&amp;to=<?= e($date) ?>">+<?= count($entries) - 4 ?> more</a>
+            <a class="a-cal-more" href="?p=eft_bookings&amp;from=<?= e($date) ?>&amp;to=<?= e($date) ?>">+<?= count($entries) - 4 ?> more</a>
           <?php endif; ?>
         </div>
     <?php endfor; ?>
@@ -1117,7 +1117,7 @@ function eft_admin_payments_view(): void
     <h1>EFT payments</h1>
     <p>Every payment record, with what the client declared and what was actually banked.</p>
   </div>
-  <a class="a-btn a-btn-ghost" href="admin.php?p=eft_payments&amp;action=export<?= $status !== '' ? '&amp;s=' . e($status) : '' ?>">Download CSV ↓</a>
+  <a class="a-btn a-btn-ghost" href="?p=eft_payments&amp;action=export<?= $status !== '' ? '&amp;s=' . e($status) : '' ?>">Download CSV ↓</a>
 </div>
 
 <div class="a-stats">
@@ -1132,9 +1132,9 @@ function eft_admin_payments_view(): void
 </div>
 
 <div class="a-tabs">
-  <a href="admin.php?p=eft_payments"<?= $status === '' ? ' class="on"' : '' ?>>All</a>
+  <a href="?p=eft_payments"<?= $status === '' ? ' class="on"' : '' ?>>All</a>
   <?php foreach (['awaiting' => 'Awaiting', 'submitted' => 'Proof submitted', 'confirmed' => 'Confirmed', 'declined' => 'Declined', 'refunded' => 'Refunded'] as $key => $label): ?>
-    <a href="admin.php?p=eft_payments&amp;s=<?= e($key) ?>"<?= $status === $key ? ' class="on"' : '' ?>><?= e($label) ?></a>
+    <a href="?p=eft_payments&amp;s=<?= e($key) ?>"<?= $status === $key ? ' class="on"' : '' ?>><?= e($label) ?></a>
   <?php endforeach; ?>
 </div>
 
@@ -1155,7 +1155,7 @@ function eft_admin_payments_view(): void
           <td><span class="a-pill a-pill-bk-<?= e((string) $row['status'] === 'confirmed' ? 'good' : ((string) $row['status'] === 'declined' ? 'bad' : 'wait')) ?>"><?= e(ucfirst(str_replace('_', ' ', (string) $row['status']))) ?></span></td>
           <td><?= (string) $row['verified_at'] !== '' ? e(date('d M Y', strtotime((string) $row['verified_at']) ?: time())) : '—' ?>
               <?php if ((string) $row['verified_by_name'] !== ''): ?><small><?= e((string) $row['verified_by_name']) ?></small><?php endif; ?></td>
-          <td class="a-right"><a class="a-btn a-btn-small" href="admin.php?p=eft_bookings&amp;action=view&amp;id=<?= (int) $row['booking_row_id'] ?>">Open</a></td>
+          <td class="a-right"><a class="a-btn a-btn-small" href="?p=eft_bookings&amp;action=view&amp;id=<?= (int) $row['booking_row_id'] ?>">Open</a></td>
         </tr>
       <?php endforeach; ?>
       </tbody>
@@ -1190,7 +1190,7 @@ function eft_admin_clients_view(): void
   <label for="cq">Search</label>
   <input type="search" id="cq" name="q" value="<?= e($search) ?>" placeholder="Name, email, company or phone">
   <button class="a-btn a-btn-small a-btn-primary" type="submit">Search</button>
-  <a class="a-btn a-btn-small" href="admin.php?p=eft_clients">Clear</a>
+  <a class="a-btn a-btn-small" href="?p=eft_clients">Clear</a>
 </form>
 
 <div class="a-card a-card-flush">
@@ -1210,7 +1210,7 @@ function eft_admin_clients_view(): void
           <td><?= (int) ($count['c'] ?? 0) ?></td>
           <td><?= e(ucfirst((string) $row['status'])) ?></td>
           <td><?= e(date('d M Y', strtotime((string) $row['created_at']) ?: time())) ?></td>
-          <td class="a-right"><a class="a-btn a-btn-small" href="admin.php?p=eft_clients&amp;action=view&amp;id=<?= (int) $row['id'] ?>">Open</a></td>
+          <td class="a-right"><a class="a-btn a-btn-small" href="?p=eft_clients&amp;action=view&amp;id=<?= (int) $row['id'] ?>">Open</a></td>
         </tr>
       <?php endforeach; ?>
       </tbody>
@@ -1234,13 +1234,13 @@ function eft_admin_client_view(int $id): void
     <h1><?= e((string) $client['full_name']) ?></h1>
     <p><?= e((string) $client['email']) ?> · joined <?= e(date('d M Y', strtotime((string) $client['created_at']) ?: time())) ?></p>
   </div>
-  <a class="a-btn a-btn-ghost" href="admin.php?p=eft_clients">← All clients</a>
+  <a class="a-btn a-btn-ghost" href="?p=eft_clients">← All clients</a>
 </div>
 
 <div class="a-grid-2">
   <section class="a-card">
     <h2>Account</h2>
-    <form method="post" action="admin.php?p=eft_clients&amp;action=view&amp;id=<?= $id ?>">
+    <form method="post" action="?p=eft_clients&amp;action=view&amp;id=<?= $id ?>">
       <?= csrf_field() ?>
       <input type="hidden" name="do" value="eft_client_save">
       <input type="hidden" name="id" value="<?= $id ?>">
@@ -1302,7 +1302,7 @@ function eft_admin_client_view(int $id): void
             <td><?= e((string) $row['service_name']) ?></td>
             <td><?= e(date('d M Y', strtotime((string) $row['booking_date']) ?: time())) ?></td>
             <td><?= eft_pill((string) $row['status']) ?></td>
-            <td class="a-right"><a class="a-btn a-btn-small" href="admin.php?p=eft_bookings&amp;action=view&amp;id=<?= (int) $row['id'] ?>">Open</a></td>
+            <td class="a-right"><a class="a-btn a-btn-small" href="?p=eft_bookings&amp;action=view&amp;id=<?= (int) $row['id'] ?>">Open</a></td>
           </tr>
         <?php endforeach; ?>
         </tbody>
@@ -1352,8 +1352,8 @@ function eft_admin_reports_view(): void
     <p>Bookings and EFT payments over a period.</p>
   </div>
   <div class="a-head-actions">
-    <a class="a-btn a-btn-ghost" href="admin.php?p=eft_bookings&amp;action=export&amp;from=<?= e($from) ?>&amp;to=<?= e($to) ?>">Bookings CSV ↓</a>
-    <a class="a-btn a-btn-ghost" href="admin.php?p=eft_payments&amp;action=export">Payments CSV ↓</a>
+    <a class="a-btn a-btn-ghost" href="?p=eft_bookings&amp;action=export&amp;from=<?= e($from) ?>&amp;to=<?= e($to) ?>">Bookings CSV ↓</a>
+    <a class="a-btn a-btn-ghost" href="?p=eft_payments&amp;action=export">Payments CSV ↓</a>
   </div>
 </div>
 
@@ -1367,7 +1367,7 @@ function eft_admin_reports_view(): void
 <?php if ($review > 0): ?>
   <div class="a-alert a-alert-warn">
     <?= $review ?> proof<?= $review === 1 ? '' : 's' ?> of payment waiting to be verified.
-    <a href="admin.php?p=eft_bookings&amp;s=proof_submitted">Review them now →</a>
+    <a href="?p=eft_bookings&amp;s=proof_submitted">Review them now →</a>
   </div>
 <?php endif; ?>
 
@@ -1459,14 +1459,14 @@ function eft_admin_emails_view(): void
 <?php if ($failed > 0): ?>
   <div class="a-alert a-alert-warn">
     <?= $failed ?> message<?= $failed === 1 ? '' : 's' ?> could not be sent.
-    Check <a href="admin.php?p=settings&amp;g=email">Site settings → Email delivery</a>.
+    Check <a href="?p=settings&amp;g=email">Site settings → Email delivery</a>.
   </div>
 <?php endif; ?>
 
 <div class="a-tabs">
-  <a href="admin.php?p=eft_emails"<?= $status === '' ? ' class="on"' : '' ?>>All</a>
-  <a href="admin.php?p=eft_emails&amp;s=sent"<?= $status === 'sent' ? ' class="on"' : '' ?>>Sent</a>
-  <a href="admin.php?p=eft_emails&amp;s=failed"<?= $status === 'failed' ? ' class="on"' : '' ?>>Failed</a>
+  <a href="?p=eft_emails"<?= $status === '' ? ' class="on"' : '' ?>>All</a>
+  <a href="?p=eft_emails&amp;s=sent"<?= $status === 'sent' ? ' class="on"' : '' ?>>Sent</a>
+  <a href="?p=eft_emails&amp;s=failed"<?= $status === 'failed' ? ' class="on"' : '' ?>>Failed</a>
 </div>
 
 <div class="a-card a-card-flush">
@@ -1487,7 +1487,7 @@ function eft_admin_emails_view(): void
           <td><span class="<?= (string) $row['status'] === 'sent' ? 'a-good' : 'a-bad' ?>"><?= e((string) $row['status']) ?></span></td>
           <td class="a-right">
             <?php if ((int) $row['booking_id'] > 0): ?>
-              <a class="a-btn a-btn-small" href="admin.php?p=eft_bookings&amp;action=view&amp;id=<?= (int) $row['booking_id'] ?>">Booking</a>
+              <a class="a-btn a-btn-small" href="?p=eft_bookings&amp;action=view&amp;id=<?= (int) $row['booking_id'] ?>">Booking</a>
             <?php endif; ?>
           </td>
         </tr>
@@ -1538,7 +1538,7 @@ function eft_admin_health(): array
     $checks[] = [
         'label' => 'Confirm by hand: the data folder is not served to the web',
         'ok'    => setting('bk_storage_verified') === '1',
-        'hint'  => 'Open ' . bk_url('data/proofs/') . ' in a browser. You should get an error page, not a file '
+        'hint'  => 'Open ' . bk_url('storage/proofs/') . ' in a browser. You should get an error page, not a file '
             . 'listing or a download. Once you have checked, tick "Private storage confirmed" in '
             . 'Site settings → Bookings & EFT.',
     ];
@@ -1645,7 +1645,7 @@ function eft_import_button(array $rows): void
     }
 
     ?>
-<form method="post" action="admin.php?p=services" class="a-inline-form" style="margin:0">
+<form method="post" action="?p=services" class="a-inline-form" style="margin:0">
   <?= csrf_field() ?>
   <input type="hidden" name="do" value="eft_import_rates">
   <button class="a-btn" type="submit"

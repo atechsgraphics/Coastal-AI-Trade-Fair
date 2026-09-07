@@ -8,49 +8,49 @@
 
 # ---------------------------------------------------------------- secrets
 # SMTP password and any other credential. Never commit this file.
-data/env.php
+storage/env.php
 env.php
 *.env
 .env
 
 # ------------------------------------------------------------- the database
 # Holds every setting, booking, payment and the staff password hashes.
-data/*.db
-data/*.db-shm
-data/*.db-wal
-data/*.sqlite
-data/*.sqlite3
+storage/*.db
+storage/*.db-shm
+storage/*.db-wal
+storage/*.sqlite
+storage/*.sqlite3
 
 # The file that records the database's deliberately unguessable name.
 # Publishing it would undo that protection.
-data/config.php
+storage/config.php
 
 # Per-installation state, written by the installer and the migration.
-data/installed.lock
-data/schema-version.lock
+storage/installed.lock
+storage/schema-version.lock
 
 # ------------------------------------------------------- client information
 # Proof-of-payment files people upload, and the tickets and receipts
 # generated for them. Personal data — keep it on the server only.
-data/proofs/*
-data/tickets/*
-data/receipts/*
-data/tmp/*
+storage/proofs/*
+storage/tickets/*
+storage/receipts/*
+storage/tmp/*
 
 # ...but do keep the rules that stop the web server serving those folders,
 # so a fresh deployment is protected from the very first request.
-!data/proofs/.htaccess
-!data/proofs/web.config
-!data/proofs/index.html
-!data/tickets/.htaccess
-!data/tickets/web.config
-!data/tickets/index.html
-!data/receipts/.htaccess
-!data/receipts/web.config
-!data/receipts/index.html
-!data/tmp/.htaccess
-!data/tmp/web.config
-!data/tmp/index.html
+!storage/proofs/.htaccess
+!storage/proofs/web.config
+!storage/proofs/index.html
+!storage/tickets/.htaccess
+!storage/tickets/web.config
+!storage/tickets/index.html
+!storage/receipts/.htaccess
+!storage/receipts/web.config
+!storage/receipts/index.html
+!storage/tmp/.htaccess
+!storage/tmp/web.config
+!storage/tmp/index.html
 
 # ------------------------------------------------------------ uploaded media
 # Anything added through the control panel belongs to the live site, not here.

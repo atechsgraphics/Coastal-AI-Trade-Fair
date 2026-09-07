@@ -93,8 +93,8 @@ function bk_deny_page(string $title, string $message): void
         . '<body style="font-family:system-ui,Segoe UI,sans-serif;margin:4rem auto;max-width:34rem;padding:0 1.25rem;line-height:1.65;color:#16242f">'
         . '<h1 style="font-size:1.35rem;margin:0 0 .6rem">' . e($title) . '</h1>'
         . '<p>' . e($message) . '</p>'
-        . '<p><a href="account.php" style="color:#0aa6cc">Go to my bookings</a> &nbsp;·&nbsp; '
-        . '<a href="index.php" style="color:#0aa6cc">Return to the website</a></p></body>';
+        . '<p><a href="' . e(url('booking/account.php')) . '" style="color:#0aa6cc">Go to my bookings</a> &nbsp;·&nbsp; '
+        . '<a href="' . e(url('index.php')) . '" style="color:#0aa6cc">Return to the website</a></p></body>';
     exit;
 }
 
@@ -1129,7 +1129,7 @@ function bk_notify_booking_created(array $booking, bool $toClient = true, bool $
                     . 'To confirm it, please pay by electronic funds transfer using the details below and quote '
                     . $booking['reference'] . ' as your payment reference. Then upload your proof of payment.',
                 $facts,
-                [['text' => 'Upload proof of payment', 'url' => bk_url('pay.php') . '?ref=' . rawurlencode((string) $booking['reference']) . '&t=' . rawurlencode((string) $booking['access_token'])]],
+                [['text' => 'Upload proof of payment', 'url' => bk_url('booking/pay.php') . '?ref=' . rawurlencode((string) $booking['reference']) . '&t=' . rawurlencode((string) $booking['access_token'])]],
                 trim($instructions . ($instructions !== '' && $note !== '' ? "\n\n" : '') . $note)
             ),
         ]);
@@ -1151,7 +1151,7 @@ function bk_notify_booking_created(array $booking, bool $toClient = true, bool $
                     ['Phone', (string) $booking['contact_phone']],
                     ['Company', (string) $booking['company']],
                 ]),
-                [['text' => 'Open in the control panel', 'url' => bk_url('admin.php') . '?p=eft_bookings&action=view&id=' . (int) $booking['id']]]
+                [['text' => 'Open in the control panel', 'url' => bk_url('admin/') . '?p=eft_bookings&action=view&id=' . (int) $booking['id']]]
             ),
         ]);
     }
@@ -1172,7 +1172,7 @@ function bk_notify_proof_uploaded(array $booking): void
                 . 'A member of our team will check it against our bank account. Your booking will be confirmed '
                 . 'once the payment has been verified, and you will get your ticket and receipt by email.',
             bk_booking_facts($booking),
-            [['text' => 'View my booking', 'url' => bk_url('account.php') . '?p=booking&id=' . (int) $booking['id']]],
+            [['text' => 'View my booking', 'url' => bk_url('booking/account.php') . '?p=booking&id=' . (int) $booking['id']]],
             'Please note: a booking is only confirmed after our team has verified the payment. Uploading a file does not confirm it on its own.'
         ),
     ]);
@@ -1194,7 +1194,7 @@ function bk_notify_proof_uploaded(array $booking): void
                     ['Bank reference given', $proof ? (string) $proof['bank_reference'] : ''],
                     ['File', $proof ? strtoupper((string) $proof['extension']) . ' · ' . round(((int) $proof['size']) / 1024) . ' KB' : ''],
                 ]),
-                [['text' => 'Review the payment', 'url' => bk_url('admin.php') . '?p=eft_bookings&action=view&id=' . (int) $booking['id']]]
+                [['text' => 'Review the payment', 'url' => bk_url('admin/') . '?p=eft_bookings&action=view&id=' . (int) $booking['id']]]
             ),
         ]);
     }
@@ -1229,18 +1229,18 @@ function bk_notify_payment_approved(array $booking, array $payment, ?array $tick
         $facts[] = ['Receipt number', (string) $receipt['receipt_number']];
     }
 
-    $buttons = [['text' => 'View my booking', 'url' => bk_url('account.php') . '?p=booking&id=' . (int) $booking['id']]];
+    $buttons = [['text' => 'View my booking', 'url' => bk_url('booking/account.php') . '?p=booking&id=' . (int) $booking['id']]];
     if ($ticket) {
         $buttons[] = [
             'text' => 'Download ticket',
-            'url'  => bk_url('download.php') . '?kind=ticket&ref=' . rawurlencode((string) $booking['reference'])
+            'url'  => bk_url('booking/download.php') . '?kind=ticket&ref=' . rawurlencode((string) $booking['reference'])
                 . '&t=' . rawurlencode((string) $booking['access_token']),
         ];
     }
     if ($receipt) {
         $buttons[] = [
             'text' => 'Download receipt',
-            'url'  => bk_url('download.php') . '?kind=receipt&ref=' . rawurlencode((string) $booking['reference'])
+            'url'  => bk_url('booking/download.php') . '?kind=receipt&ref=' . rawurlencode((string) $booking['reference'])
                 . '&t=' . rawurlencode((string) $booking['access_token']),
         ];
     }
@@ -1280,7 +1280,7 @@ function bk_notify_payment_declined(array $booking, string $reason): void
                 . 'Unfortunately our team could not accept it. The reason is below. Your booking is still held — '
                 . 'please upload a corrected proof of payment and we will review it again.',
             array_merge(bk_booking_facts($booking), bk_bank_facts($booking)),
-            [['text' => 'Upload a corrected proof', 'url' => bk_url('pay.php') . '?ref=' . rawurlencode((string) $booking['reference']) . '&t=' . rawurlencode((string) $booking['access_token'])]],
+            [['text' => 'Upload a corrected proof', 'url' => bk_url('booking/pay.php') . '?ref=' . rawurlencode((string) $booking['reference']) . '&t=' . rawurlencode((string) $booking['access_token'])]],
             'Reason given by our team: ' . $reason
         ),
     ]);
@@ -1303,7 +1303,7 @@ function bk_notify_admin_decision(array $booking, string $decision, string $note
             'Payment ' . $decision,
             'Booking ' . $booking['reference'] . ' has had its EFT payment ' . $decision . '.',
             array_merge(bk_booking_facts($booking), [['Note', $note]]),
-            [['text' => 'Open in the control panel', 'url' => bk_url('admin.php') . '?p=eft_bookings&action=view&id=' . (int) $booking['id']]]
+            [['text' => 'Open in the control panel', 'url' => bk_url('admin/') . '?p=eft_bookings&action=view&id=' . (int) $booking['id']]]
         ),
     ]);
 }
@@ -1332,7 +1332,7 @@ function bk_notify_admin_request(array $booking, string $type, string $date, str
             'A client has asked to ' . ($type === 'cancel' ? 'cancel a booking' : 'move a booking'),
             'Booking ' . $booking['reference'] . ' has a ' . $type . ' request waiting.',
             $facts,
-            [['text' => 'Open in the control panel', 'url' => bk_url('admin.php') . '?p=eft_bookings&action=view&id=' . (int) $booking['id']]]
+            [['text' => 'Open in the control panel', 'url' => bk_url('admin/') . '?p=eft_bookings&action=view&id=' . (int) $booking['id']]]
         ),
     ]);
 }
@@ -1350,7 +1350,7 @@ function bk_notify_rescheduled(array $booking, string $was): void
             'Your booking has a new date and time',
             'Booking ' . $booking['reference'] . ' has been moved from ' . $was . '.',
             bk_booking_facts($booking),
-            [['text' => 'View my booking', 'url' => bk_url('account.php') . '?p=booking&id=' . (int) $booking['id']]],
+            [['text' => 'View my booking', 'url' => bk_url('booking/account.php') . '?p=booking&id=' . (int) $booking['id']]],
             in_array((string) $booking['status'], ['confirmed', 'payment_confirmed'], true)
                 ? 'A replacement ticket showing the new time is available in your account.'
                 : ''
@@ -1418,7 +1418,7 @@ function bk_resend_instructions(array $booking): bool
             'How to pay for your booking',
             'Here are the EFT details for booking ' . $booking['reference'] . ' again. Please use the booking reference as your payment reference.',
             $facts,
-            [['text' => 'Upload proof of payment', 'url' => bk_url('pay.php') . '?ref=' . rawurlencode((string) $booking['reference']) . '&t=' . rawurlencode((string) $booking['access_token'])]],
+            [['text' => 'Upload proof of payment', 'url' => bk_url('booking/pay.php') . '?ref=' . rawurlencode((string) $booking['reference']) . '&t=' . rawurlencode((string) $booking['access_token'])]],
             trim(bk('bk_payment_instructions'))
         ),
     ]);

@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-require __DIR__ . '/inc/bootstrap.php';
+require __DIR__ . '/app/bootstrap.php';
 require_installed();
-require __DIR__ . '/inc/layout.php';
-require __DIR__ . '/inc/booking.php';
+require __DIR__ . '/app/layout.php';
+require __DIR__ . '/app/booking.php';
 
 start_session();
 
@@ -88,7 +88,7 @@ page_hero($page);
         </div>
 
         <div class="receipt-actions">
-          <a class="btn btn-primary" href="booking-pdf.php?ref=<?= rawurlencode($confirmed['reference']) ?>&amp;t=<?= rawurlencode($confirmed['token']) ?>">
+          <a class="btn btn-primary" href="admin/booking-pdf.php?ref=<?= rawurlencode($confirmed['reference']) ?>&amp;t=<?= rawurlencode($confirmed['token']) ?>">
             Download your registration form (PDF) <span aria-hidden="true">↓</span>
           </a>
           <a class="btn btn-ghost" href="index.php">Back to the website <span aria-hidden="true">→</span></a>

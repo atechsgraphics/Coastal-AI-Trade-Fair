@@ -406,7 +406,7 @@ function booking_setting_defaults(): array
         'bk_reference_prefix'       => 'ATF',
         'bk_site_url'               => '',
         'nav_cta_text'              => 'Book online',
-        'nav_cta_link'              => 'booking.php',
+        'nav_cta_link'              => 'booking/',
         'bk_require_verified_email' => '1',
 
         /* Payment */

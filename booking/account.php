@@ -9,10 +9,10 @@ declare(strict_types=1);
  * payments, files or profile.
  */
 
-require __DIR__ . '/inc/bootstrap.php';
+require __DIR__ . '/../app/bootstrap.php';
 require_installed();
-require __DIR__ . '/inc/layout.php';
-require __DIR__ . '/inc/client-ui.php';
+require __DIR__ . '/../app/layout.php';
+require __DIR__ . '/../app/client-ui.php';
 
 start_session();
 bk_require_platform();
@@ -26,7 +26,7 @@ $id     = (int) ($_GET['id'] ?? 0);
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     if (!csrf_check()) {
         bk_flash('error', 'Your session expired. Please sign in and try again.');
-        redirect('login.php');
+        redirect('auth/login.php');
     }
 
     $action = (string) ($_POST['do'] ?? '');
@@ -38,7 +38,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
         if ($fullName === '' || $phone === '') {
             bk_flash('error', 'Please keep your name and phone number filled in — we need them for your bookings.');
-            redirect('account.php?p=profile');
+            redirect('booking/account.php?p=profile');
         }
 
         db_run(
@@ -58,7 +58,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         );
 
         bk_flash('ok', 'Your details have been saved.');
-        redirect('account.php?p=profile');
+        redirect('booking/account.php?p=profile');
     }
 
     /* ---- password ---- */
@@ -92,7 +92,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             ]);
             bk_flash('ok', 'Your password has been changed.');
         }
-        redirect('account.php?p=password');
+        redirect('booking/account.php?p=password');
     }
 
     /* ---- cancellation / reschedule requests ---- */
@@ -107,7 +107,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         ]);
 
         bk_flash($result['ok'] ? 'ok' : 'error', $result['message']);
-        redirect('account.php?p=booking&id=' . (int) $booking['id']);
+        redirect('booking/account.php?p=booking&id=' . (int) $booking['id']);
     }
 }
 
@@ -155,17 +155,17 @@ bk_hero(
     <?php if (client_needs_verification($client)): ?>
       <div class="alert alert-warn" role="status">
         Your email address is not confirmed yet. Please open the link we emailed you, or
-        <a href="verify-email.php">ask for a new one</a>. You need a confirmed address before you can book.
+        <a href="<?= e(url('auth/verify-email.php')) ?>">ask for a new one</a>. You need a confirmed address before you can book.
       </div>
     <?php endif; ?>
 
     <nav class="bk-tabs" aria-label="Account sections">
-      <a href="account.php"<?= $screen === 'overview' ? ' class="on"' : '' ?>>Overview</a>
-      <a href="account.php?p=bookings"<?= in_array($screen, ['bookings', 'booking'], true) ? ' class="on"' : '' ?>>My bookings</a>
-      <a href="account.php?p=history"<?= $screen === 'history' ? ' class="on"' : '' ?>>Payments</a>
-      <a href="account.php?p=profile"<?= $screen === 'profile' ? ' class="on"' : '' ?>>My details</a>
-      <a href="account.php?p=password"<?= $screen === 'password' ? ' class="on"' : '' ?>>Password</a>
-      <a href="login.php?do=logout" class="bk-tab-out">Sign out</a>
+      <a href="<?= e(url('booking/account.php')) ?>"<?= $screen === 'overview' ? ' class="on"' : '' ?>>Overview</a>
+      <a href="<?= e(url('booking/account.php?p=bookings')) ?>"<?= in_array($screen, ['bookings', 'booking'], true) ? ' class="on"' : '' ?>>My bookings</a>
+      <a href="<?= e(url('booking/account.php?p=history')) ?>"<?= $screen === 'history' ? ' class="on"' : '' ?>>Payments</a>
+      <a href="<?= e(url('booking/account.php?p=profile')) ?>"<?= $screen === 'profile' ? ' class="on"' : '' ?>>My details</a>
+      <a href="<?= e(url('booking/account.php?p=password')) ?>"<?= $screen === 'password' ? ' class="on"' : '' ?>>Password</a>
+      <a href="<?= e(url('auth/login.php?do=logout')) ?>" class="bk-tab-out">Sign out</a>
     </nav>
 
 <?php
@@ -221,13 +221,13 @@ function account_overview_view(array $client, array $counts): void
     <?php if (!$upcoming): ?>
       <div class="bk-panel bk-panel-centred">
         <p class="lede">You have no upcoming bookings.</p>
-        <p><a class="btn btn-primary" href="booking.php">Make a booking <span aria-hidden="true">→</span></a></p>
+        <p><a class="btn btn-primary" href="<?= e(url('booking/')) ?>">Make a booking <span aria-hidden="true">→</span></a></p>
       </div>
     <?php else: ?>
       <div class="bk-booking-list">
         <?php foreach ($upcoming as $row) { account_booking_row($row); } ?>
       </div>
-      <p class="bk-list-more"><a class="text-link" href="account.php?p=bookings">See all my bookings →</a></p>
+      <p class="bk-list-more"><a class="text-link" href="<?= e(url('booking/account.php?p=bookings')) ?>">See all my bookings →</a></p>
     <?php endif; ?>
     <?php
 }
@@ -240,17 +240,17 @@ function account_bookings_view(array $client): void
     ?>
     <div class="bk-filter-row">
       <div class="bk-tabs bk-tabs-small">
-        <a href="account.php?p=bookings&amp;when=all"<?= $when === 'all' ? ' class="on"' : '' ?>>All</a>
-        <a href="account.php?p=bookings&amp;when=upcoming"<?= $when === 'upcoming' ? ' class="on"' : '' ?>>Upcoming</a>
-        <a href="account.php?p=bookings&amp;when=past"<?= $when === 'past' ? ' class="on"' : '' ?>>Past</a>
+        <a href="<?= e(url('booking/account.php?p=bookings&when=all')) ?>"<?= $when === 'all' ? ' class="on"' : '' ?>>All</a>
+        <a href="<?= e(url('booking/account.php?p=bookings&when=upcoming')) ?>"<?= $when === 'upcoming' ? ' class="on"' : '' ?>>Upcoming</a>
+        <a href="<?= e(url('booking/account.php?p=bookings&when=past')) ?>"<?= $when === 'past' ? ' class="on"' : '' ?>>Past</a>
       </div>
-      <a class="btn btn-primary" href="booking.php">New booking <span aria-hidden="true">→</span></a>
+      <a class="btn btn-primary" href="<?= e(url('booking/')) ?>">New booking <span aria-hidden="true">→</span></a>
     </div>
 
     <?php if (!$rows): ?>
       <div class="bk-panel bk-panel-centred">
         <p class="lede">Nothing here yet.</p>
-        <p><a class="btn btn-primary" href="booking.php">Make your first booking <span aria-hidden="true">→</span></a></p>
+        <p><a class="btn btn-primary" href="<?= e(url('booking/')) ?>">Make your first booking <span aria-hidden="true">→</span></a></p>
       </div>
     <?php else: ?>
       <div class="bk-booking-list">
@@ -282,11 +282,11 @@ function account_booking_row(array $row, bool $highlight = false): void
       <div class="bk-booking-side">
         <?= bk_pill((string) $row['status']) ?>
         <div class="bk-booking-actions">
-          <a class="btn btn-ghost btn-small" href="account.php?p=booking&amp;id=<?= (int) $row['id'] ?>">Open</a>
+          <a class="btn btn-ghost btn-small" href="<?= e(url('booking/account.php')) ?>?p=booking&amp;id=<?= (int) $row['id'] ?>">Open</a>
           <?php if (in_array((string) $row['status'], bk_awaiting_payment_statuses(), true)): ?>
-            <a class="btn btn-small btn-primary" href="pay.php?id=<?= (int) $row['id'] ?>">Pay / upload</a>
+            <a class="btn btn-small btn-primary" href="<?= e(url('booking/pay.php')) ?>?id=<?= (int) $row['id'] ?>">Pay / upload</a>
           <?php elseif ($confirmed): ?>
-            <a class="btn btn-small btn-primary" href="download.php?kind=ticket&amp;booking=<?= (int) $row['id'] ?>">Ticket ↓</a>
+            <a class="btn btn-small btn-primary" href="<?= e(url('booking/download.php')) ?>?kind=ticket&amp;booking=<?= (int) $row['id'] ?>">Ticket ↓</a>
           <?php endif; ?>
         </div>
       </div>
@@ -311,7 +311,7 @@ function account_booking_view(int $id): void
     $moveRule = bk_can_request_reschedule($booking);
     $service = bk_service((int) $booking['service_id']);
     ?>
-    <p class="bk-back"><a class="text-link" href="account.php?p=bookings">← All my bookings</a></p>
+    <p class="bk-back"><a class="text-link" href="<?= e(url('booking/account.php?p=bookings')) ?>">← All my bookings</a></p>
 
     <?php bk_journey_render($booking); ?>
 
@@ -333,7 +333,7 @@ function account_booking_view(int $id): void
           <div class="bk-callout bk-callout-bad">
             <strong>Why your proof of payment was not accepted</strong>
             <p><?= nl2br(e((string) $booking['decline_reason'])) ?></p>
-            <p><a class="btn btn-primary btn-small" href="pay.php?id=<?= (int) $booking['id'] ?>">Upload a corrected proof <span aria-hidden="true">→</span></a></p>
+            <p><a class="btn btn-primary btn-small" href="<?= e(url('booking/pay.php')) ?>?id=<?= (int) $booking['id'] ?>">Upload a corrected proof <span aria-hidden="true">→</span></a></p>
           </div>
         <?php endif; ?>
 
@@ -354,16 +354,16 @@ function account_booking_view(int $id): void
 
         <div class="bk-cta-row">
           <?php if ($canPay): ?>
-            <a class="btn btn-primary" href="pay.php?id=<?= (int) $booking['id'] ?>">
+            <a class="btn btn-primary" href="<?= e(url('booking/pay.php')) ?>?id=<?= (int) $booking['id'] ?>">
               <?= (string) $booking['status'] === 'awaiting_eft' ? 'Pay by EFT / upload proof' : 'Replace my proof of payment' ?>
               <span aria-hidden="true">→</span>
             </a>
           <?php endif; ?>
           <?php if ($confirmed && $ticket && (string) $ticket['status'] !== 'void'): ?>
-            <a class="btn btn-primary" href="download.php?kind=ticket&amp;booking=<?= (int) $booking['id'] ?>">Download my ticket <span aria-hidden="true">↓</span></a>
+            <a class="btn btn-primary" href="<?= e(url('booking/download.php')) ?>?kind=ticket&amp;booking=<?= (int) $booking['id'] ?>">Download my ticket <span aria-hidden="true">↓</span></a>
           <?php endif; ?>
           <?php if ($confirmed && $receipt): ?>
-            <a class="btn btn-ghost" href="download.php?kind=receipt&amp;booking=<?= (int) $booking['id'] ?>">Download my receipt <span aria-hidden="true">↓</span></a>
+            <a class="btn btn-ghost" href="<?= e(url('booking/download.php')) ?>?kind=receipt&amp;booking=<?= (int) $booking['id'] ?>">Download my receipt <span aria-hidden="true">↓</span></a>
           <?php endif; ?>
         </div>
 
@@ -393,7 +393,7 @@ function account_booking_view(int $id): void
                     'submitted' => 'Awaiting review', 'approved' => 'Approved',
                     'declined' => 'Not accepted', 'superseded' => 'Replaced',
                 ][(string) $proof['status']] ?? (string) $proof['status']) ?></span>
-                <a class="btn btn-ghost btn-small" href="download.php?kind=proof&amp;id=<?= (int) $proof['id'] ?>">View</a>
+                <a class="btn btn-ghost btn-small" href="<?= e(url('booking/download.php')) ?>?kind=proof&amp;id=<?= (int) $proof['id'] ?>">View</a>
               </li>
             <?php endforeach; ?>
           </ul>
@@ -438,7 +438,7 @@ function account_booking_view(int $id): void
           <?php if ($moveRule['allowed'] && $service): ?>
             <details class="bk-details">
               <summary>Ask to move this booking</summary>
-              <form method="post" action="account.php" class="bk-form bk-form-tight">
+              <form method="post" action="<?= e(url('booking/account.php')) ?>" class="bk-form bk-form-tight">
                 <?= csrf_field() ?>
                 <input type="hidden" name="do" value="request_reschedule">
                 <input type="hidden" name="booking_id" value="<?= (int) $booking['id'] ?>">
@@ -468,7 +468,7 @@ function account_booking_view(int $id): void
           <?php if ($cancelRule['allowed']): ?>
             <details class="bk-details">
               <summary>Ask to cancel this booking</summary>
-              <form method="post" action="account.php" class="bk-form bk-form-tight">
+              <form method="post" action="<?= e(url('booking/account.php')) ?>" class="bk-form bk-form-tight">
                 <?= csrf_field() ?>
                 <input type="hidden" name="do" value="request_cancel">
                 <input type="hidden" name="booking_id" value="<?= (int) $booking['id'] ?>">
@@ -528,9 +528,9 @@ function account_history_view(array $client): void
                     'declined' => 'Declined', 'refunded' => 'Refunded',
                 ][(string) $row['status']] ?? (string) $row['status']) ?></td>
                 <td data-label="" class="bk-right">
-                  <a class="btn btn-ghost btn-small" href="account.php?p=booking&amp;id=<?= (int) $row['booking_row_id'] ?>">Open</a>
+                  <a class="btn btn-ghost btn-small" href="<?= e(url('booking/account.php')) ?>?p=booking&amp;id=<?= (int) $row['booking_row_id'] ?>">Open</a>
                   <?php if ((string) $row['status'] === 'confirmed'): ?>
-                    <a class="btn btn-ghost btn-small" href="download.php?kind=receipt&amp;booking=<?= (int) $row['booking_row_id'] ?>">Receipt ↓</a>
+                    <a class="btn btn-ghost btn-small" href="<?= e(url('booking/download.php')) ?>?kind=receipt&amp;booking=<?= (int) $row['booking_row_id'] ?>">Receipt ↓</a>
                   <?php endif; ?>
                 </td>
               </tr>
@@ -551,7 +551,7 @@ function account_profile_view(array $client): void
         <h2 class="bk-panel-title">My details</h2>
         <p class="bk-panel-lead">These details are filled in for you each time you make a booking.</p>
 
-        <form method="post" action="account.php" class="bk-form" novalidate>
+        <form method="post" action="<?= e(url('booking/account.php')) ?>" class="bk-form" novalidate>
           <?= csrf_field() ?>
           <input type="hidden" name="do" value="profile">
 
@@ -606,7 +606,7 @@ function account_password_view(): void
     <div class="bk-narrow">
       <div class="bk-panel">
         <h2 class="bk-panel-title">Change my password</h2>
-        <form method="post" action="account.php" class="bk-form" novalidate>
+        <form method="post" action="<?= e(url('booking/account.php')) ?>" class="bk-form" novalidate>
           <?= csrf_field() ?>
           <input type="hidden" name="do" value="password">
 

@@ -46,7 +46,7 @@ function site_head(string $slug, string $titleOverride = '', string $description
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/site.css?v=<?= e(asset_version('assets/site.css')) ?>">
+<link rel="stylesheet" href="<?= e(url('assets/site.css')) ?>?v=<?= e(asset_version('assets/site.css')) ?>">
 <style>:root{--accent:<?= e(setting('theme_accent', '#22c9f0')) ?>;--gold:<?= e(setting('theme_gold', '#f2b544')) ?>;--ink:<?= e(setting('theme_ink', '#04121f')) ?>;}</style>
 <script>document.documentElement.classList.add('js');</script>
 <?= setting('analytics_code') ?>
@@ -70,7 +70,7 @@ function site_header(string $slug): void
     ?>
 <header class="site-header" id="siteHeader">
   <div class="header-inner">
-    <a class="brand" href="index.php" aria-label="<?= e(setting('event_name')) ?> — home">
+    <a class="brand" href="<?= e(url('index.php')) ?>" aria-label="<?= e(setting('event_name')) ?> — home">
       <img src="<?= e($logo) ?>" alt="<?= e(setting('event_name')) ?>">
     </a>
     <button class="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="mainNav">
@@ -78,10 +78,10 @@ function site_header(string $slug): void
     </button>
     <nav class="main-nav" id="mainNav" aria-label="Main navigation">
       <?php foreach (nav_pages() as $item): ?>
-        <a href="<?= e($item['slug']) ?>.php"<?= $item['slug'] === $slug ? ' class="active" aria-current="page"' : '' ?>><?= e($item['nav_label']) ?></a>
+        <a href="<?= e(page_url((string) $item['slug'])) ?>"<?= $item['slug'] === $slug ? ' class="active" aria-current="page"' : '' ?>><?= e($item['nav_label']) ?></a>
       <?php endforeach; ?>
       <?php if (setting_bool('registration_open', true) && setting('nav_cta_text') !== ''): ?>
-        <a class="nav-cta" href="<?= e(setting('nav_cta_link', 'booking.php')) ?>"><?= e(setting('nav_cta_text', 'Book online')) ?> <span aria-hidden="true">↗</span></a>
+        <a class="nav-cta" href="<?= e(url(setting('nav_cta_link', 'booking/'))) ?>"><?= e(setting('nav_cta_text', 'Book online')) ?> <span aria-hidden="true">↗</span></a>
       <?php endif; ?>
     </nav>
   </div>
@@ -138,7 +138,7 @@ function site_footer(): void
 <footer class="site-footer">
   <div class="shell footer-grid">
     <div class="footer-brand">
-      <a class="brand" href="index.php"><img src="<?= e($logo) ?>" alt="<?= e(setting('event_name')) ?>"></a>
+      <a class="brand" href="<?= e(url('index.php')) ?>"><img src="<?= e($logo) ?>" alt="<?= e(setting('event_name')) ?>"></a>
       <p><?= e(setting('event_tagline')) ?></p>
       <?php if ($socials): ?>
         <div class="footer-social">
@@ -172,14 +172,14 @@ function site_footer(): void
     <div class="footer-col">
       <h3>Quick links</h3>
       <?php foreach (nav_pages() as $item): ?>
-        <p><a href="<?= e($item['slug']) ?>.php"><?= e($item['nav_label']) ?></a></p>
+        <p><a href="<?= e(page_url((string) $item['slug'])) ?>"><?= e($item['nav_label']) ?></a></p>
       <?php endforeach; ?>
       <?php if (setting('registration_form') !== ''): ?>
-        <p><a href="<?= e(rawurlencode_path(setting('registration_form'))) ?>" download>Registration form ↓</a></p>
+        <p><a href="<?= e(url(rawurlencode_path(setting('registration_form')))) ?>" download>Registration form ↓</a></p>
       <?php endif; ?>
       <?php if (function_exists('bk_enabled') && bk_enabled() && setting_bool('bk_nav_enabled', true)): ?>
-        <p><a href="booking.php">Book online</a></p>
-        <p><a href="<?= client_logged_in() ? 'account.php' : 'login.php' ?>"><?= client_logged_in() ? 'My bookings' : 'Sign in' ?></a></p>
+        <p><a href="<?= e(url('booking/')) ?>">Book online</a></p>
+        <p><a href="<?= e(url(client_logged_in() ? 'booking/account.php' : 'auth/login.php')) ?>"><?= client_logged_in() ? 'My bookings' : 'Sign in' ?></a></p>
       <?php endif; ?>
     </div>
   </div>
@@ -191,7 +191,7 @@ function site_footer(): void
   </div>
   <div class="shell footer-note"><?= e(setting('footer_note')) ?></div>
 </footer>
-<script src="assets/site.js?v=<?= e(asset_version('assets/site.js')) ?>"></script>
+<script src="<?= e(url('assets/site.js')) ?>?v=<?= e(asset_version('assets/site.js')) ?>"></script>
 </body>
 </html>
     <?php
@@ -222,7 +222,7 @@ function site_image(string $path, int $width): string
     }
 
     $cached = image_resized(ltrim($path, '/'), max(16, $width) * 2);
-    return rawurlencode_path($cached ?? ltrim($path, '/'));
+    return url(rawurlencode_path($cached ?? ltrim($path, '/')));
 }
 
 /**

@@ -15,10 +15,10 @@ declare(strict_types=1);
  * which file is read.
  */
 
-require __DIR__ . '/inc/bootstrap.php';
+require __DIR__ . '/../app/bootstrap.php';
 require_installed();
-require __DIR__ . '/inc/eft.php';
-require __DIR__ . '/inc/admin-lib.php';
+require __DIR__ . '/../app/eft.php';
+require __DIR__ . '/../app/admin-lib.php';
 
 start_session();
 
@@ -31,7 +31,7 @@ function download_deny(string $message = 'That file is not available to this acc
         . '<title>Not available</title>'
         . '<body style="font-family:system-ui,Segoe UI,sans-serif;margin:4rem auto;max-width:34rem;padding:0 1.25rem;line-height:1.65;color:#16242f">'
         . '<h1 style="font-size:1.3rem;margin:0 0 .6rem">Not available</h1><p>' . e($message) . '</p>'
-        . '<p><a href="account.php" style="color:#0aa6cc">Go to my bookings</a></p></body>';
+        . '<p><a href="' . e(url('booking/account.php')) . '" style="color:#0aa6cc">Go to my bookings</a></p></body>';
     exit;
 }
 
@@ -74,7 +74,7 @@ if (!$booking) {
     if (!$staff && !bk_client_owns($booking, $client)) {
         if (!$client) {
             $_SESSION['client_after_login'] = bk_current_url();
-            redirect('login.php');
+            redirect('auth/login.php');
         }
         download_deny();
     }

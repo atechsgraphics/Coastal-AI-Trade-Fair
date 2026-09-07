@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-require __DIR__ . '/inc/bootstrap.php';
+require __DIR__ . '/app/bootstrap.php';
 require_installed();
-require __DIR__ . '/inc/layout.php';
-require __DIR__ . '/inc/enquiry.php';
+require __DIR__ . '/app/layout.php';
+require __DIR__ . '/app/enquiry.php';
 
 $page       = site_head('home');
 $stats      = blocks('home', 'stats');

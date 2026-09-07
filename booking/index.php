@@ -14,10 +14,10 @@ declare(strict_types=1);
  * transaction, so a slot that fills up while somebody is typing is caught.
  */
 
-require __DIR__ . '/inc/bootstrap.php';
+require __DIR__ . '/../app/bootstrap.php';
 require_installed();
-require __DIR__ . '/inc/layout.php';
-require __DIR__ . '/inc/client-ui.php';
+require __DIR__ . '/../app/layout.php';
+require __DIR__ . '/../app/client-ui.php';
 
 start_session();
 bk_require_platform();
@@ -53,17 +53,17 @@ if ($service && $date !== '' && $time !== '' && !bk_slot_open($service, $date, $
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     if (!csrf_check()) {
         bk_flash('error', 'Your session expired before the form was sent. Please check your details and try again.');
-        redirect('booking.php');
+        redirect('booking/');
     }
 
     $client = require_client();
     if (client_needs_verification($client)) {
         bk_flash('warn', 'Please confirm your email address before booking. We have sent you a link.');
-        redirect('verify-email.php');
+        redirect('auth/verify-email.php');
     }
     if (!$service || $date === '' || $time === '') {
         bk_flash('error', 'Please choose a service, a date and a time.');
-        redirect('booking.php');
+        redirect('booking/');
     }
 
     $input = [
@@ -86,16 +86,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $step = 'review';
         } elseif (!rate_limit('booknew:' . client_ip(), 12, 3600)) {
             bk_flash('error', 'Too many bookings have been started from this connection. Please try again later.');
-            redirect('booking.php');
+            redirect('booking/');
         } else {
             $result = bk_create_booking($input, $client);
             if (!$result['ok']) {
                 bk_flash('error', $result['message']);
-                redirect('booking.php?service=' . (int) $service['id'] . '&date=' . rawurlencode($date));
+                redirect('booking/?service=' . (int) $service['id'] . '&date=' . rawurlencode($date));
             }
 
             bk_flash('ok', 'Booking ' . $result['booking']['reference'] . ' created. Please pay by EFT to confirm it.');
-            redirect('pay.php?id=' . (int) $result['booking']['id']);
+            redirect('booking/pay.php?id=' . (int) $result['booking']['id']);
         }
     } else {
         $step = 'review';
@@ -184,7 +184,7 @@ if (!$service):
               </p>
 
               <a class="btn <?= $next !== '' ? 'btn-primary' : 'btn-ghost' ?>"
-                 href="booking.php?service=<?= (int) $row['id'] ?>">
+                 href="<?= e(url('booking/')) ?>?service=<?= (int) $row['id'] ?>">
                 <?= $next !== '' ? 'Choose a date' : 'See availability' ?> <span aria-hidden="true">→</span>
               </a>
             </div>
@@ -238,7 +238,7 @@ elseif ($step === 'review'):
                 : 'Flat rate for this booking' ?></p>
         </div>
 
-        <form method="post" action="booking.php?step=confirm" class="bk-form">
+        <form method="post" action="<?= e(url('booking/?step=confirm')) ?>" class="bk-form">
           <?= csrf_field() ?>
           <input type="hidden" name="service_id" value="<?= (int) $service['id'] ?>">
           <input type="hidden" name="date" value="<?= e($date) ?>">
@@ -267,7 +267,7 @@ elseif ($step === 'review'):
 
           <div class="bk-form-actions">
             <button class="btn btn-primary" type="submit">Confirm this booking <span aria-hidden="true">→</span></button>
-            <p><a class="text-link" href="booking.php?service=<?= (int) $service['id'] ?>&amp;date=<?= e($date) ?>&amp;time=<?= e($time) ?>">← Change the details</a></p>
+            <p><a class="text-link" href="<?= e(url('booking/')) ?>?service=<?= (int) $service['id'] ?>&amp;date=<?= e($date) ?>&amp;time=<?= e($time) ?>">← Change the details</a></p>
           </div>
         </form>
       </div>
@@ -290,7 +290,7 @@ elseif ($step === 'review'):
 elseif ($date !== '' && $time !== ''):
     $client = client_user();
     if (!$client) {
-        $_SESSION['client_after_login'] = 'booking.php?service=' . (int) $service['id'] . '&date=' . rawurlencode($date) . '&time=' . rawurlencode($time);
+        $_SESSION['client_after_login'] = 'booking/?service=' . (int) $service['id'] . '&date=' . rawurlencode($date) . '&time=' . rawurlencode($time);
     }
     $minGuests = max(1, (int) $service['min_guests']);
     $maxGuests = max($minGuests, (int) $service['max_guests']);
@@ -301,26 +301,26 @@ elseif ($date !== '' && $time !== ''):
         <p class="bk-panel-lead">
           <strong><?= e((string) $service['name']) ?></strong> ·
           <?= e(bk_date_long($date)) ?> at <?= e($time) ?>
-          &nbsp;<a class="text-link" href="booking.php?service=<?= (int) $service['id'] ?>&amp;date=<?= e($date) ?>">change</a>
+          &nbsp;<a class="text-link" href="<?= e(url('booking/')) ?>?service=<?= (int) $service['id'] ?>&amp;date=<?= e($date) ?>">change</a>
         </p>
 
         <?php if (!$client): ?>
           <div class="alert alert-warn" role="status">
-            Please <a href="login.php">sign in</a> or <a href="register.php">create an account</a> to finish this booking.
+            Please <a href="<?= e(url('auth/login.php')) ?>">sign in</a> or <a href="<?= e(url('auth/register.php')) ?>">create an account</a> to finish this booking.
             We will bring you straight back here.
           </div>
           <p>
-            <a class="btn btn-primary" href="login.php">Sign in <span aria-hidden="true">→</span></a>
-            <a class="btn btn-ghost" href="register.php">Create an account</a>
+            <a class="btn btn-primary" href="<?= e(url('auth/login.php')) ?>">Sign in <span aria-hidden="true">→</span></a>
+            <a class="btn btn-ghost" href="<?= e(url('auth/register.php')) ?>">Create an account</a>
           </p>
         <?php elseif (client_needs_verification($client)): ?>
           <div class="alert alert-warn" role="status">
             Please confirm your email address before booking — check your inbox for the link we sent when you registered.
           </div>
-          <p><a class="btn btn-primary" href="verify-email.php">Resend the confirmation link</a></p>
+          <p><a class="btn btn-primary" href="<?= e(url('auth/verify-email.php')) ?>">Resend the confirmation link</a></p>
         <?php else: ?>
 
-        <form method="post" action="booking.php?step=review" class="bk-form" novalidate>
+        <form method="post" action="<?= e(url('booking/?step=review')) ?>" class="bk-form" novalidate>
           <?= csrf_field() ?>
           <input type="hidden" name="service_id" value="<?= (int) $service['id'] ?>">
           <input type="hidden" name="date" value="<?= e($date) ?>">
@@ -430,13 +430,13 @@ else:
         <h2 class="bk-panel-title">Choose a date and time</h2>
         <p class="bk-panel-lead">
           <strong><?= e((string) $service['name']) ?></strong>
-          &nbsp;<a class="text-link" href="booking.php">change service</a>
+          &nbsp;<a class="text-link" href="<?= e(url('booking/')) ?>">change service</a>
         </p>
 
         <?php if (!$openDates): ?>
           <div class="alert alert-warn" role="status">
             There are no open dates for this service at the moment. Please
-            <a href="contact.php">contact us</a> and we will help you directly.
+            <a href="<?= e(url('contact.php')) ?>">contact us</a> and we will help you directly.
           </div>
         <?php else: ?>
           <div class="bk-dates" role="list">
@@ -450,7 +450,7 @@ else:
                 <?php endif; ?>
                 <a role="listitem"
                    class="bk-date<?= $entry['date'] === $date ? ' is-on' : '' ?>"
-                   href="booking.php?service=<?= (int) $service['id'] ?>&amp;date=<?= e($entry['date']) ?>">
+                   href="<?= e(url('booking/')) ?>?service=<?= (int) $service['id'] ?>&amp;date=<?= e($entry['date']) ?>">
                   <span class="bk-date-day"><?= e(date('D', strtotime($entry['date']))) ?></span>
                   <strong><?= e(date('j', strtotime($entry['date']))) ?></strong>
                   <span class="bk-date-open"><?= (int) $entry['open'] ?> open</span>
@@ -473,7 +473,7 @@ else:
           <div class="bk-slots">
             <?php foreach ($slots as $slot): ?>
               <?php if ($slot['available']): ?>
-                <a class="bk-slot" href="booking.php?service=<?= (int) $service['id'] ?>&amp;date=<?= e($date) ?>&amp;time=<?= e($slot['start']) ?>">
+                <a class="bk-slot" href="<?= e(url('booking/')) ?>?service=<?= (int) $service['id'] ?>&amp;date=<?= e($date) ?>&amp;time=<?= e($slot['start']) ?>">
                   <strong><?= e($slot['start']) ?></strong>
                   <span><?= (int) $slot['free'] ?> left</span>
                 </a>

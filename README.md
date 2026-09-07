@@ -19,13 +19,13 @@ changes are needed to update content, prices, dates, logos or contact details.
 3. Choose a username and password. This becomes the administrator account.
 4. Delete `setup.php` when you are finished.
 
-The site is then at `index.php` and the control panel at `admin.php`.
+The site is then at `index.php` and the control panel at `admin/`.
 
 ### On a live web host
 
 1. Upload every file and folder to the hosting account's public folder
    (usually `public_html`).
-2. Make the `data` and `uploads` folders writable (permission `755`, or `775`
+2. Make the `storage` and `uploads` folders writable (permission `755`, or `775`
    if the host requires it).
 3. Open `https://yourdomain.com/setup.php` and complete the short form.
 4. **Delete `setup.php` from the server.**
@@ -39,13 +39,13 @@ almost every host). No MySQL database, no configuration file to edit.
 
 ## 2. The control panel
 
-Sign in at `admin.php`.
+Sign in at `admin/`.
 
 | Screen | What it controls |
 | --- | --- |
 | **Dashboard** | Days to go, new enquiries, quick actions, site health checks |
 | **Enquiries** | Every message sent through the website, with CSV download |
-| **Bookings & EFT** | Online bookings, proof-of-payment review, approvals — see [BOOKING-PLATFORM.md](BOOKING-PLATFORM.md) |
+| **Bookings & EFT** | Online bookings, proof-of-payment review, approvals — see [docs/BOOKING-PLATFORM.md](docs/BOOKING-PLATFORM.md) |
 | **Diary / Payments / Clients / Reports / Email log** | The rest of the online booking system |
 | **Services / Opening hours / Blocked dates** | What can be booked online, and when |
 | **Pages** | Page titles, hero headlines, menu labels, search descriptions |
@@ -88,46 +88,56 @@ message, and afterwards by your closing message.
 
 ```
 index.php  about.php  programme.php  exhibit.php        the public pages
-packages.php  partners.php  contact.php
-admin.php                                               the whole control panel
-setup.php                                               one-time installer (delete after use)
-sitemap.php  robots.txt  .htaccess                       search engines & server rules
+packages.php  partners.php  contact.php  book.php
+404.php  sitemap.php  robots.txt  .htaccess              error page & server rules
+setup.php                                                one-time installer (delete after use)
 
-booking.php   account.php   pay.php                     the online booking system
-login.php     register.php  verify-email.php            (see BOOKING-PLATFORM.md)
-forgot-password.php  reset-password.php
-download.php  verify-ticket.php
+app/      bootstrap.php   database connection, settings, links, shared helpers
+          layout.php      header, navigation, countdown, footer, image sizing
+          enquiry.php     the enquiry form, validation and notification
+          admin-lib.php   control-panel engine (auth, fields, uploads, CRUD)
+          booking.php     the paper-style registration form and its PDF
+          pdf.php         the simple PDF writer that form uses
+          platform.php    booking core: config, client accounts, statuses, audit
+          services.php    services, opening hours, blocked dates, free slots
+          eft.php         bookings, payments, proofs, approval, emails
+          documents.php   tickets and receipts, via Core/dompdf
+          qr.php          QR codes for the tickets
+          mailer.php      SMTP, attachments, email log
+          client-ui.php   shared pieces for the booking screens
+          eft-admin.php   control-panel booking screens
+          eft-actions.php what those screens post to
 
-inc/    bootstrap.php   database connection, settings, shared helpers
-        schema.php      database structure and the starting content
-        layout.php      header, navigation, countdown, footer
-        enquiry.php     the enquiry form, validation and notification
-        admin-lib.php   control-panel engine (auth, fields, uploads, CRUD)
+auth/     login  register  verify-email                  client accounts
+          forgot-password  reset-password
 
-        migrate.php     booking tables and their settings (additive, automatic)
-        platform.php    booking core: config, client accounts, statuses, audit
-        services.php    services, opening hours, blocked dates, free slots
-        eft.php         bookings, payments, proofs, approval, emails
-        documents.php   tickets and receipts, via Core/dompdf
-        qr.php          QR codes for the tickets
-        mailer.php      SMTP, attachments, email log
-        client-ui.php   shared pieces for the booking screens
-        eft-admin.php   control-panel booking screens
-        eft-actions.php what those screens post to
+booking/  index.php       the online booking flow
+          pay.php         EFT instructions and proof upload
+          account.php     the client dashboard
+          download.php    the only way a stored file leaves the server
+          verify-ticket.php  ticket checking at the door
 
-Core/   dompdf          the PDF generator used for tickets and receipts
+admin/    index.php       the whole control panel
+          booking-pdf.php the registration form as a PDF
 
-assets/ site.css  site.js       the public website
-        admin.css admin.js      the control panel
+database/ schema.php      database structure and the starting content
+          migrate.php     booking tables and settings (additive, automatic)
+
+Core/     dompdf          the PDF generator used for tickets and receipts
+
+assets/   site.css  site.js       the public website
+          admin.css admin.js      the control panel
+
+docs/     BOOKING-PLATFORM.md     how the booking system works
 
 images/   original event photos, logos and the registration form PDF
-uploads/  everything added through the control panel
-data/     the database — never delete this folder
-          proofs/ tickets/ receipts/ — private booking files, never served
+uploads/  everything added through the control panel, plus resized images
+storage/  the database and private files — never delete this folder
+          proofs/ tickets/ receipts/ — never served to the web
 ```
 
 Adding a new editable list to the site means adding one entry to
-`admin_resources()` in `inc/admin-lib.php`; the list, form, ordering, delete and
+`admin_resources()` in `app/admin-lib.php`; the list, form, ordering, delete and
 visibility controls are generated from that definition.
 
 ---
@@ -135,9 +145,9 @@ visibility controls are generated from that definition.
 ## 4. Backups
 
 The entire website — all text, prices, partners, enquiries, bookings, payments
-and settings — lives in one file inside `data/`. Proofs of payment, tickets and
-receipts sit beside it in `data/proofs`, `data/tickets` and `data/receipts`. To
-back up, download the whole `data` folder and the `uploads` folder. To restore,
+and settings — lives in one file inside `storage/`. Proofs of payment, tickets and
+receipts sit beside it in `storage/proofs`, `storage/tickets` and `storage/receipts`. To
+back up, download the whole `storage` folder and the `uploads` folder. To restore,
 put them back.
 
 Do this before any big change, and after every busy week of registrations.
@@ -151,14 +161,14 @@ Do this before any big change, and after every busy week of registrations.
 - Sign-in attempts and enquiry submissions are rate limited.
 - Uploads are checked by content, not by file name — a PHP file renamed to
   `.png` is rejected.
-- `data/` and `inc/` are blocked from the web by `.htaccess` and `web.config`,
+- `storage/`, `app/` and `database/` are blocked from the web by `.htaccess` and `web.config`,
   and the database file is given an unguessable name at install time.
-- After going live, confirm that opening `yourdomain.com/data/` in a browser
+- After going live, confirm that opening `yourdomain.com/storage/` in a browser
   gives an error rather than a file listing. Do the same for
-  `yourdomain.com/data/proofs/`, which holds clients' proofs of payment, then
+  `yourdomain.com/storage/proofs/`, which holds clients' proofs of payment, then
   tick **Private storage confirmed** in Site settings → Bookings & EFT.
-- Secrets such as an SMTP password belong in `data/env.php`, which the web
-  server never serves. See [BOOKING-PLATFORM.md](BOOKING-PLATFORM.md).
+- Secrets such as an SMTP password belong in `storage/env.php`, which the web
+  server never serves. See [docs/BOOKING-PLATFORM.md](docs/BOOKING-PLATFORM.md).
 
 ---
 
@@ -175,7 +185,7 @@ panel — check it daily, or ask the host to enable SMTP mail.
 Online bookings need email that actually works, because that is how clients
 receive their tickets and receipts. Configure SMTP under **Site settings →
 Email delivery**; every attempt is recorded in the **Email log** so you can
-always see what went out. See [BOOKING-PLATFORM.md](BOOKING-PLATFORM.md).
+always see what went out. See [docs/BOOKING-PLATFORM.md](docs/BOOKING-PLATFORM.md).
 
 ---
 

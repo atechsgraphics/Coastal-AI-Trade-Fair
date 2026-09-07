@@ -4,15 +4,15 @@ declare(strict_types=1);
 /**
  * Coastal AI Summit & SME Trade Fair — control panel.
  * A single entry point; ?p= chooses the screen. All editing behaviour lives in
- * inc/admin-lib.php so this file stays a thin router plus the views.
+ * app/admin-lib.php so this file stays a thin router plus the views.
  */
 
-require __DIR__ . '/inc/bootstrap.php';
+require __DIR__ . '/../app/bootstrap.php';
 require_installed();
-require __DIR__ . '/inc/layout.php';
-require __DIR__ . '/inc/admin-lib.php';
-require __DIR__ . '/inc/booking.php';
-require __DIR__ . '/inc/eft-actions.php';   // pulls in eft-admin.php and the platform
+require __DIR__ . '/../app/layout.php';
+require __DIR__ . '/../app/admin-lib.php';
+require __DIR__ . '/../app/booking.php';
+require __DIR__ . '/../app/eft-actions.php';   // pulls in eft-admin.php and the platform
 
 start_session();
 
@@ -25,12 +25,12 @@ $id        = (int) ($_GET['id'] ?? 0);
 
 if ($route === 'logout') {
     admin_logout();
-    redirect('admin.php?p=login');
+    redirect('admin/?p=login');
 }
 
 if ($route === 'login') {
     if (admin_user()) {
-        redirect('admin.php');
+        redirect('admin/');
     }
     $error = '';
     if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
@@ -42,7 +42,7 @@ if ($route === 'login') {
             $error = 'That username or password is not correct.';
             usleep(400000);
         } else {
-            redirect('admin.php');
+            redirect('admin/');
         }
     }
     admin_login_view($error);
@@ -56,7 +56,7 @@ $user = require_admin();
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     if (!csrf_check()) {
         admin_flash('error', 'Your session expired. Please sign in again.');
-        redirect('admin.php?p=login');
+        redirect('admin/?p=login');
     }
 
     $do = (string) ($_POST['do'] ?? '');
@@ -71,11 +71,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $definition = $resources[$route];
         if ($id === 0 && !empty($definition['no_create'])) {
             admin_flash('error', 'New items cannot be added to that list.');
-            redirect('admin.php?p=' . urlencode($route));
+            redirect('admin/?p=' . urlencode($route));
         }
         $savedId = admin_save($route, $definition, $id);
         admin_flash('ok', ucfirst($definition['singular']) . ' saved.');
-        redirect('admin.php?p=' . urlencode($route) . '&action=edit&id=' . $savedId);
+        redirect('admin/?p=' . urlencode($route) . '&action=edit&id=' . $savedId);
     }
 
     /* ---- save a settings tab ---- */
@@ -86,7 +86,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             admin_settings_save($groups[$key]);
             admin_flash('ok', $groups[$key]['label'] . ' settings saved.');
         }
-        redirect('admin.php?p=settings&g=' . urlencode($key));
+        redirect('admin/?p=settings&g=' . urlencode($key));
     }
 
     /* ---- booking: status, notes and applicant corrections ---- */
@@ -95,7 +95,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $booking = booking_find($bookingId);
         if (!$booking) {
             admin_flash('error', 'That booking no longer exists.');
-            redirect('admin.php?p=bookings');
+            redirect('admin/?p=bookings');
         }
 
         $newStatus = (string) ($_POST['status'] ?? $booking['status']);
@@ -124,7 +124,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
         admin_log('updated booking', $booking['reference'] . ' → ' . $newStatus);
         admin_flash('ok', 'Booking ' . $booking['reference'] . ' saved.');
-        redirect('admin.php?p=bookings&action=view&id=' . $bookingId);
+        redirect('admin/?p=bookings&action=view&id=' . $bookingId);
     }
 
     /* ---- enquiry status ---- */
@@ -134,7 +134,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             db_run('UPDATE enquiries SET status = :s WHERE id = :id', [':s' => $status, ':id' => (int) $_POST['id']]);
             admin_flash('ok', 'Enquiry marked as ' . $status . '.');
         }
-        redirect('admin.php?p=enquiries');
+        redirect('admin/?p=enquiries');
     }
 
     /* ---- users ---- */
@@ -149,12 +149,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
         if ($username === '' || !preg_match('/^[a-z0-9._-]{3,40}$/', $username)) {
             admin_flash('error', 'Usernames need 3–40 characters: letters, numbers, dot, dash or underscore.');
-            redirect('admin.php?p=users');
+            redirect('admin/?p=users');
         }
         $clash = db_one('SELECT id FROM users WHERE username = :u AND id != :id', [':u' => $username, ':id' => $uid]);
         if ($clash) {
             admin_flash('error', 'That username is already taken.');
-            redirect('admin.php?p=users');
+            redirect('admin/?p=users');
         }
 
         if ($uid > 0) {
@@ -162,7 +162,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             if ($password !== '') {
                 if (strlen($password) < 8) {
                     admin_flash('error', 'Passwords must be at least 8 characters. The other details were saved.');
-                    redirect('admin.php?p=users');
+                    redirect('admin/?p=users');
                 }
                 db_run('UPDATE users SET password_hash = ? WHERE id = ?', [password_hash($password, PASSWORD_DEFAULT), $uid]);
             }
@@ -170,7 +170,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         } else {
             if (strlen($password) < 8) {
                 admin_flash('error', 'Please give the new user a password of at least 8 characters.');
-                redirect('admin.php?p=users');
+                redirect('admin/?p=users');
             }
             db_run(
                 'INSERT INTO users (username, name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?, ?)',
@@ -179,7 +179,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             admin_flash('ok', 'User created.');
         }
         admin_log('saved user', $username);
-        redirect('admin.php?p=users');
+        redirect('admin/?p=users');
     }
 
     /* ---- own password ---- */
@@ -199,14 +199,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             admin_log('changed own password');
             admin_flash('ok', 'Your password has been changed.');
         }
-        redirect('admin.php?p=account');
+        redirect('admin/?p=account');
     }
 
     /* ---- media upload ---- */
     if ($do === 'media_upload') {
         $saved = admin_upload('upload__file');
         admin_flash($saved ? 'ok' : 'error', $saved ? 'Uploaded ' . $saved : 'Nothing was uploaded.');
-        redirect('admin.php?p=media');
+        redirect('admin/?p=media');
     }
 }
 
@@ -227,15 +227,15 @@ if ($action !== '' && $id > 0 && isset($resources[$route])) {
             admin_delete($route, $id);
             admin_flash('ok', 'Deleted.');
         }
-        redirect('admin.php?p=' . urlencode($route));
+        redirect('admin/?p=' . urlencode($route));
     }
     if ($action === 'up' || $action === 'down') {
         admin_reorder($route, $id, $action);
-        redirect('admin.php?p=' . urlencode($route));
+        redirect('admin/?p=' . urlencode($route));
     }
     if ($action === 'toggle') {
         admin_toggle($route, $id);
-        redirect('admin.php?p=' . urlencode($route));
+        redirect('admin/?p=' . urlencode($route));
     }
 }
 
@@ -256,7 +256,7 @@ if ($route === 'users' && $action === 'delete' && $id > 0) {
             admin_flash('ok', 'User deleted.');
         }
     }
-    redirect('admin.php?p=users');
+    redirect('admin/?p=users');
 }
 
 if ($route === 'media' && $action === 'delete') {
@@ -275,7 +275,7 @@ if ($route === 'media' && $action === 'delete') {
             admin_flash('error', 'That file could not be deleted.');
         }
     }
-    redirect('admin.php?p=media');
+    redirect('admin/?p=media');
 }
 
 /* Bookings: spreadsheet export and deletion. */
@@ -301,7 +301,7 @@ if ($route === 'bookings' && $action === 'delete' && $id > 0) {
     } else {
         admin_flash('error', 'That delete link has expired.');
     }
-    redirect('admin.php?p=bookings');
+    redirect('admin/?p=bookings');
 }
 
 if ($route === 'enquiries' && $action === 'delete' && $id > 0) {
@@ -310,7 +310,7 @@ if ($route === 'enquiries' && $action === 'delete' && $id > 0) {
         admin_log('deleted enquiry', '#' . $id);
         admin_flash('ok', 'Enquiry deleted.');
     }
-    redirect('admin.php?p=enquiries');
+    redirect('admin/?p=enquiries');
 }
 
 /* CSV export of every enquiry — streamed, not rendered as a page. */
@@ -337,7 +337,7 @@ if ($route === 'enquiries' && $action === 'export') {
 // Permission checks must run before any HTML is sent, so redirects still work.
 if ($route === 'users' && !is_owner()) {
     admin_flash('error', 'Only an administrator can open that section.');
-    redirect('admin.php');
+    redirect('admin/');
 }
 
 admin_head($route);
@@ -423,7 +423,7 @@ switch (true) {
         break;
 
     default:
-        echo '<div class="a-card"><h2>Screen not found</h2><p>That page does not exist. <a href="admin.php">Return to the dashboard</a>.</p></div>';
+        echo '<div class="a-card"><h2>Screen not found</h2><p>That page does not exist. <a href="./">Return to the dashboard</a>.</p></div>';
 }
 
 admin_foot();
@@ -455,61 +455,61 @@ function admin_head(string $route): void
 <body>
 <div class="a-shell">
   <aside class="a-side" id="aSide">
-    <a class="a-brand" href="admin.php">
+    <a class="a-brand" href="./">
       <img src="<?= e(img_src(setting('logo'))) ?>" alt="">
       <span><?= e(setting('site_name')) ?><small>Control panel</small></span>
     </a>
 
     <nav class="a-nav">
       <p class="a-nav-group">Overview</p>
-      <a href="admin.php"<?= $route === 'dashboard' ? ' class="on"' : '' ?>><i>◉</i> Dashboard</a>
-      <a href="admin.php?p=bookings"<?= $route === 'bookings' ? ' class="on"' : '' ?>>
+      <a href="./"<?= $route === 'dashboard' ? ' class="on"' : '' ?>><i>◉</i> Dashboard</a>
+      <a href="?p=bookings"<?= $route === 'bookings' ? ' class="on"' : '' ?>>
         <i>▤</i> Bookings
         <?php if ((int) $newBookings['c'] > 0): ?><b class="a-badge"><?= (int) $newBookings['c'] ?></b><?php endif; ?>
       </a>
-      <a href="admin.php?p=enquiries"<?= $route === 'enquiries' ? ' class="on"' : '' ?>>
+      <a href="?p=enquiries"<?= $route === 'enquiries' ? ' class="on"' : '' ?>>
         <i>✉</i> Enquiries
         <?php if ((int) $newEnquiries['c'] > 0): ?><b class="a-badge"><?= (int) $newEnquiries['c'] ?></b><?php endif; ?>
       </a>
 
       <?php if (booking_schema_current()): ?>
         <p class="a-nav-group">Online bookings</p>
-        <a href="admin.php?p=eft_bookings"<?= $route === 'eft_bookings' ? ' class="on"' : '' ?>>
+        <a href="?p=eft_bookings"<?= $route === 'eft_bookings' ? ' class="on"' : '' ?>>
           <i>▤</i> Bookings &amp; EFT
           <?php if ($eftReview + $eftRequests > 0): ?><b class="a-badge"><?= $eftReview + $eftRequests ?></b><?php endif; ?>
         </a>
-        <a href="admin.php?p=eft_calendar"<?= $route === 'eft_calendar' ? ' class="on"' : '' ?>><i>▦</i> Diary</a>
-        <a href="admin.php?p=eft_payments"<?= $route === 'eft_payments' ? ' class="on"' : '' ?>><i>◎</i> Payments</a>
-        <a href="admin.php?p=eft_clients"<?= $route === 'eft_clients' ? ' class="on"' : '' ?>><i>◍</i> Clients</a>
-        <a href="admin.php?p=eft_reports"<?= $route === 'eft_reports' ? ' class="on"' : '' ?>><i>◔</i> Reports</a>
-        <a href="admin.php?p=eft_emails"<?= $route === 'eft_emails' ? ' class="on"' : '' ?>><i>✉</i> Email log</a>
-        <a href="verify-ticket.php" target="_blank" rel="noopener"><i>✓</i> Verify a ticket ↗</a>
+        <a href="?p=eft_calendar"<?= $route === 'eft_calendar' ? ' class="on"' : '' ?>><i>▦</i> Diary</a>
+        <a href="?p=eft_payments"<?= $route === 'eft_payments' ? ' class="on"' : '' ?>><i>◎</i> Payments</a>
+        <a href="?p=eft_clients"<?= $route === 'eft_clients' ? ' class="on"' : '' ?>><i>◍</i> Clients</a>
+        <a href="?p=eft_reports"<?= $route === 'eft_reports' ? ' class="on"' : '' ?>><i>◔</i> Reports</a>
+        <a href="?p=eft_emails"<?= $route === 'eft_emails' ? ' class="on"' : '' ?>><i>✉</i> Email log</a>
+        <a href="<?= e(url('booking/verify-ticket.php')) ?>" target="_blank" rel="noopener"><i>✓</i> Verify a ticket ↗</a>
       <?php endif; ?>
 
       <?php foreach ($groups as $groupName => $items): ?>
         <p class="a-nav-group"><?= e($groupName) ?></p>
         <?php foreach ($items as $key => $definition): ?>
-          <a href="admin.php?p=<?= e($key) ?>"<?= $route === $key ? ' class="on"' : '' ?>>
+          <a href="?p=<?= e($key) ?>"<?= $route === $key ? ' class="on"' : '' ?>>
             <i><?= e($definition['icon'] ?? '•') ?></i> <?= e($definition['label']) ?>
           </a>
         <?php endforeach; ?>
       <?php endforeach; ?>
 
       <p class="a-nav-group">Setup</p>
-      <a href="admin.php?p=settings"<?= $route === 'settings' ? ' class="on"' : '' ?>><i>⚙</i> Site settings</a>
-      <a href="admin.php?p=media"<?= $route === 'media' ? ' class="on"' : '' ?>><i>▤</i> Media library</a>
+      <a href="?p=settings"<?= $route === 'settings' ? ' class="on"' : '' ?>><i>⚙</i> Site settings</a>
+      <a href="?p=media"<?= $route === 'media' ? ' class="on"' : '' ?>><i>▤</i> Media library</a>
       <?php if (is_owner()): ?>
-        <a href="admin.php?p=users"<?= $route === 'users' ? ' class="on"' : '' ?>><i>◍</i> Users</a>
+        <a href="?p=users"<?= $route === 'users' ? ' class="on"' : '' ?>><i>◍</i> Users</a>
       <?php endif; ?>
-      <a href="admin.php?p=activity"<?= $route === 'activity' ? ' class="on"' : '' ?>><i>≡</i> Activity</a>
+      <a href="?p=activity"<?= $route === 'activity' ? ' class="on"' : '' ?>><i>≡</i> Activity</a>
     </nav>
 
     <div class="a-side-foot">
-      <a class="a-user" href="admin.php?p=account">
+      <a class="a-user" href="?p=account">
         <span class="a-avatar"><?= e(mb_strtoupper(mb_substr($user['name'] ?: $user['username'], 0, 1))) ?></span>
         <span><?= e($user['name'] ?: $user['username']) ?><small><?= e($user['role'] === 'admin' ? 'Administrator' : 'Editor') ?></small></span>
       </a>
-      <a class="a-signout" href="admin.php?p=logout">Sign out</a>
+      <a class="a-signout" href="?p=logout">Sign out</a>
     </div>
   </aside>
 
@@ -517,7 +517,7 @@ function admin_head(string $route): void
     <header class="a-top">
       <button class="a-burger" type="button" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
       <div class="a-top-actions">
-        <a class="a-btn a-btn-ghost" href="index.php" target="_blank" rel="noopener">View website ↗</a>
+        <a class="a-btn a-btn-ghost" href="<?= e(url('index.php')) ?>" target="_blank" rel="noopener">View website ↗</a>
       </div>
     </header>
 
@@ -625,23 +625,23 @@ function admin_dashboard(): void
     </p>
     <p class="a-countdown-meta"><?= e(event_date_range()) ?> · <?= e(setting('venue_name')) ?>, <?= e(setting('venue_city')) ?></p>
   </div>
-  <a class="a-btn a-btn-ghost" href="admin.php?p=settings&amp;g=event">Change the dates</a>
+  <a class="a-btn a-btn-ghost" href="?p=settings&amp;g=event">Change the dates</a>
 </div>
 
 <div class="a-stats">
-  <a class="a-stat a-stat-primary" href="admin.php?p=bookings">
+  <a class="a-stat a-stat-primary" href="?p=bookings">
     <span class="a-stat-num"><?= $bookingPending ?></span>
     <span class="a-stat-label">Bookings awaiting payment</span>
     <small><?= $bookingCount ?> bookings · <?= e(money_format($bookingValue)) ?> booked</small>
   </a>
-  <a class="a-stat" href="admin.php?p=enquiries">
+  <a class="a-stat" href="?p=enquiries">
     <span class="a-stat-num"><?= $newCount ?></span>
     <span class="a-stat-label">New enquiries</span>
     <small><?= $allCount ?> received in total</small>
   </a>
   <?php foreach (['partners', 'stalls', 'programme_days'] as $key): ?>
     <?php if (isset($counts[$key])): ?>
-      <a class="a-stat" href="admin.php?p=<?= e($key) ?>">
+      <a class="a-stat" href="?p=<?= e($key) ?>">
         <span class="a-stat-num"><?= $counts[$key]['count'] ?></span>
         <span class="a-stat-label"><?= e($counts[$key]['label']) ?></span>
       </a>
@@ -665,7 +665,7 @@ function admin_dashboard(): void
             </td>
             <td class="a-right">
               <span class="a-pill a-pill-<?= e($row['status']) ?>"><?= e(booking_statuses()[$row['status']] ?? $row['status']) ?></span>
-              <a class="a-btn a-btn-small" href="admin.php?p=bookings&amp;action=view&amp;id=<?= (int) $row['id'] ?>">Open</a>
+              <a class="a-btn a-btn-small" href="?p=bookings&amp;action=view&amp;id=<?= (int) $row['id'] ?>">Open</a>
             </td>
           </tr>
         <?php endforeach; ?>
@@ -689,7 +689,7 @@ function admin_dashboard(): void
             </td>
             <td class="a-right">
               <?php if ($row['status'] === 'new'): ?><span class="a-pill a-pill-new">New</span><?php endif; ?>
-              <a class="a-btn a-btn-small" href="admin.php?p=enquiries#e<?= (int) $row['id'] ?>">Open</a>
+              <a class="a-btn a-btn-small" href="?p=enquiries#e<?= (int) $row['id'] ?>">Open</a>
             </td>
           </tr>
         <?php endforeach; ?>
@@ -701,16 +701,16 @@ function admin_dashboard(): void
   <section class="a-card">
     <h2>Quick actions</h2>
     <div class="a-quick">
-      <a href="admin.php?p=bookings">See all bookings</a>
-      <a href="admin.php?p=stalls">Update stall rates &amp; booking options</a>
-      <a href="admin.php?p=settings&amp;g=home">Edit the home page text</a>
-      <a href="admin.php?p=partners&amp;action=new">Add a sponsor or partner</a>
-      <a href="admin.php?p=packages">Update sponsorship prices</a>
-      <a href="admin.php?p=stalls">Update stall rates</a>
-      <a href="admin.php?p=programme_days">Change the programme</a>
-      <a href="admin.php?p=speakers&amp;action=new">Add a speaker</a>
-      <a href="admin.php?p=gallery&amp;action=new">Add a photo to the gallery</a>
-      <a href="admin.php?p=settings&amp;g=contact">Change contact details</a>
+      <a href="?p=bookings">See all bookings</a>
+      <a href="?p=stalls">Update stall rates &amp; booking options</a>
+      <a href="?p=settings&amp;g=home">Edit the home page text</a>
+      <a href="?p=partners&amp;action=new">Add a sponsor or partner</a>
+      <a href="?p=packages">Update sponsorship prices</a>
+      <a href="?p=stalls">Update stall rates</a>
+      <a href="?p=programme_days">Change the programme</a>
+      <a href="?p=speakers&amp;action=new">Add a speaker</a>
+      <a href="?p=gallery&amp;action=new">Add a photo to the gallery</a>
+      <a href="?p=settings&amp;g=contact">Change contact details</a>
     </div>
   </section>
 </div>
@@ -767,7 +767,7 @@ function admin_list_view(string $key, array $definition): void
       <?php ($definition['extra_action'])($rows); ?>
     <?php endif; ?>
     <?php if (empty($definition['no_create'])): ?>
-      <a class="a-btn a-btn-primary" href="admin.php?p=<?= e($key) ?>&amp;action=new">+ Add <?= e($definition['singular']) ?></a>
+      <a class="a-btn a-btn-primary" href="?p=<?= e($key) ?>&amp;action=new">+ Add <?= e($definition['singular']) ?></a>
     <?php endif; ?>
   </div>
 </div>
@@ -831,20 +831,20 @@ function admin_list_view(string $key, array $definition): void
           <?php endforeach; ?>
           <td class="a-right a-actions">
             <?php if (isset($definition['fields']['position'])): ?>
-              <a class="a-icon" href="admin.php?p=<?= e($key) ?>&amp;action=up&amp;id=<?= (int) $row['id'] ?>" title="Move up">↑</a>
-              <a class="a-icon" href="admin.php?p=<?= e($key) ?>&amp;action=down&amp;id=<?= (int) $row['id'] ?>" title="Move down">↓</a>
+              <a class="a-icon" href="?p=<?= e($key) ?>&amp;action=up&amp;id=<?= (int) $row['id'] ?>" title="Move up">↑</a>
+              <a class="a-icon" href="?p=<?= e($key) ?>&amp;action=down&amp;id=<?= (int) $row['id'] ?>" title="Move down">↓</a>
             <?php endif; ?>
             <?php if ($visibleColumn): ?>
               <a class="a-icon<?= (int) $row[$visibleColumn] ? ' on' : '' ?>"
-                 href="admin.php?p=<?= e($key) ?>&amp;action=toggle&amp;id=<?= (int) $row['id'] ?>"
+                 href="?p=<?= e($key) ?>&amp;action=toggle&amp;id=<?= (int) $row['id'] ?>"
                  title="<?= (int) $row[$visibleColumn] ? 'Visible — click to hide' : 'Hidden — click to show' ?>">
                 <?= (int) $row[$visibleColumn] ? '👁' : '🚫' ?>
               </a>
             <?php endif; ?>
-            <a class="a-btn a-btn-small" href="admin.php?p=<?= e($key) ?>&amp;action=edit&amp;id=<?= (int) $row['id'] ?>">Edit</a>
+            <a class="a-btn a-btn-small" href="?p=<?= e($key) ?>&amp;action=edit&amp;id=<?= (int) $row['id'] ?>">Edit</a>
             <?php if (empty($definition['no_delete'])): ?>
               <a class="a-btn a-btn-small a-btn-danger"
-                 href="admin.php?p=<?= e($key) ?>&amp;action=delete&amp;id=<?= (int) $row['id'] ?>&amp;t=<?= e(csrf_token()) ?>"
+                 href="?p=<?= e($key) ?>&amp;action=delete&amp;id=<?= (int) $row['id'] ?>&amp;t=<?= e(csrf_token()) ?>"
                  data-confirm="Delete this <?= e($definition['singular']) ?>? This cannot be undone.">Delete</a>
             <?php endif; ?>
           </td>
@@ -874,11 +874,11 @@ function admin_edit_view(string $key, array $definition, int $id): void
     <h1><?= $id > 0 ? 'Edit' : 'Add' ?> <?= e($definition['singular']) ?></h1>
     <?php if (!empty($definition['intro'])): ?><p><?= e($definition['intro']) ?></p><?php endif; ?>
   </div>
-  <a class="a-btn a-btn-ghost" href="admin.php?p=<?= e($key) ?>">← Back to <?= e(strtolower($definition['label'])) ?></a>
+  <a class="a-btn a-btn-ghost" href="?p=<?= e($key) ?>">← Back to <?= e(strtolower($definition['label'])) ?></a>
 </div>
 
 <form class="a-card" method="post" enctype="multipart/form-data"
-      action="admin.php?p=<?= e($key) ?>&amp;action=edit&amp;id=<?= $id ?>">
+      action="?p=<?= e($key) ?>&amp;action=edit&amp;id=<?= $id ?>">
   <?= csrf_field() ?>
   <input type="hidden" name="do" value="save">
 
@@ -900,10 +900,10 @@ function admin_edit_view(string $key, array $definition, int $id): void
 
   <div class="a-form-actions">
     <button class="a-btn a-btn-primary" type="submit">Save <?= e($definition['singular']) ?></button>
-    <a class="a-btn a-btn-ghost" href="admin.php?p=<?= e($key) ?>">Cancel</a>
+    <a class="a-btn a-btn-ghost" href="?p=<?= e($key) ?>">Cancel</a>
     <?php if ($id > 0 && empty($definition['no_delete'])): ?>
       <a class="a-btn a-btn-danger a-push-right"
-         href="admin.php?p=<?= e($key) ?>&amp;action=delete&amp;id=<?= $id ?>&amp;t=<?= e(csrf_token()) ?>"
+         href="?p=<?= e($key) ?>&amp;action=delete&amp;id=<?= $id ?>&amp;t=<?= e(csrf_token()) ?>"
          data-confirm="Delete this <?= e($definition['singular']) ?>? This cannot be undone.">Delete</a>
     <?php endif; ?>
   </div>
@@ -932,11 +932,11 @@ function admin_settings_view(): void
 
 <div class="a-tabs">
   <?php foreach ($groups as $key => $item): ?>
-    <a href="admin.php?p=settings&amp;g=<?= e($key) ?>"<?= $key === $active ? ' class="on"' : '' ?>><?= e($item['label']) ?></a>
+    <a href="?p=settings&amp;g=<?= e($key) ?>"<?= $key === $active ? ' class="on"' : '' ?>><?= e($item['label']) ?></a>
   <?php endforeach; ?>
 </div>
 
-<form class="a-card" method="post" enctype="multipart/form-data" action="admin.php?p=settings&amp;g=<?= e($active) ?>">
+<form class="a-card" method="post" enctype="multipart/form-data" action="?p=settings&amp;g=<?= e($active) ?>">
   <?= csrf_field() ?>
   <input type="hidden" name="do" value="settings">
   <input type="hidden" name="group" value="<?= e($active) ?>">
@@ -956,7 +956,7 @@ function admin_settings_view(): void
 
   <div class="a-form-actions">
     <button class="a-btn a-btn-primary" type="submit">Save <?= e(strtolower($group['label'])) ?></button>
-    <a class="a-btn a-btn-ghost" href="index.php" target="_blank" rel="noopener">Preview the site ↗</a>
+    <a class="a-btn a-btn-ghost" href="<?= e(url('index.php')) ?>" target="_blank" rel="noopener">Preview the site ↗</a>
   </div>
 </form>
     <?php
@@ -985,7 +985,7 @@ function admin_bookings_view(): void
     <h1>Bookings</h1>
     <p>Every online registration, with the full form exactly as the applicant completed it.</p>
   </div>
-  <a class="a-btn a-btn-ghost" href="admin.php?p=bookings&amp;action=export<?= $filter !== '' ? '&amp;s=' . e($filter) : '' ?>">Download CSV ↓</a>
+  <a class="a-btn a-btn-ghost" href="?p=bookings&amp;action=export<?= $filter !== '' ? '&amp;s=' . e($filter) : '' ?>">Download CSV ↓</a>
 </div>
 
 <div class="a-stats">
@@ -1005,9 +1005,9 @@ function admin_bookings_view(): void
 </div>
 
 <div class="a-tabs">
-  <a href="admin.php?p=bookings"<?= $filter === '' ? ' class="on"' : '' ?>>All</a>
+  <a href="?p=bookings"<?= $filter === '' ? ' class="on"' : '' ?>>All</a>
   <?php foreach ($statuses as $key => $label): ?>
-    <a href="admin.php?p=bookings&amp;s=<?= e($key) ?>"<?= $filter === $key ? ' class="on"' : '' ?>><?= e($label) ?></a>
+    <a href="?p=bookings&amp;s=<?= e($key) ?>"<?= $filter === $key ? ' class="on"' : '' ?>><?= e($label) ?></a>
   <?php endforeach; ?>
 </div>
 
@@ -1029,7 +1029,7 @@ function admin_bookings_view(): void
           <td><strong><?= e(money_format((float) $row['total'])) ?></strong></td>
           <td><span class="a-pill a-pill-<?= e($row['status']) ?>"><?= e($statuses[$row['status']] ?? $row['status']) ?></span></td>
           <td class="a-right a-actions">
-            <a class="a-btn a-btn-small" href="admin.php?p=bookings&amp;action=view&amp;id=<?= (int) $row['id'] ?>">Open</a>
+            <a class="a-btn a-btn-small" href="?p=bookings&amp;action=view&amp;id=<?= (int) $row['id'] ?>">Open</a>
             <a class="a-btn a-btn-small" href="booking-pdf.php?id=<?= (int) $row['id'] ?>" target="_blank" rel="noopener">PDF ↓</a>
           </td>
         </tr>
@@ -1060,7 +1060,7 @@ function admin_booking_view(int $id): void
   <div style="display:flex;gap:.5rem;flex-wrap:wrap">
     <a class="a-btn a-btn-primary" href="booking-pdf.php?id=<?= $id ?>" target="_blank" rel="noopener">Download PDF ↓</a>
     <a class="a-btn a-btn-ghost" href="booking-pdf.php?id=<?= $id ?>&amp;view=1" target="_blank" rel="noopener">Preview</a>
-    <a class="a-btn a-btn-ghost" href="admin.php?p=bookings">← All bookings</a>
+    <a class="a-btn a-btn-ghost" href="?p=bookings">← All bookings</a>
   </div>
 </div>
 
@@ -1097,7 +1097,7 @@ function admin_booking_view(int $id): void
 
   <section class="a-card">
     <h2>Applicant details &amp; status</h2>
-    <form method="post" action="admin.php?p=bookings&amp;action=view&amp;id=<?= $id ?>">
+    <form method="post" action="?p=bookings&amp;action=view&amp;id=<?= $id ?>">
       <?= csrf_field() ?>
       <input type="hidden" name="do" value="booking_save">
       <input type="hidden" name="id" value="<?= $id ?>">
@@ -1140,7 +1140,7 @@ function admin_booking_view(int $id): void
         <button class="a-btn a-btn-primary" type="submit">Save booking</button>
         <a class="a-btn a-btn-ghost" href="mailto:<?= e($booking['email']) ?>?subject=<?= rawurlencode('Booking ' . $booking['reference'] . ' - ' . setting('event_name')) ?>">Email applicant</a>
         <a class="a-btn a-btn-danger a-push-right"
-           href="admin.php?p=bookings&amp;action=delete&amp;id=<?= $id ?>&amp;t=<?= e(csrf_token()) ?>"
+           href="?p=bookings&amp;action=delete&amp;id=<?= $id ?>&amp;t=<?= e(csrf_token()) ?>"
            data-confirm="Delete booking <?= e($booking['reference']) ?> permanently? This cannot be undone.">Delete</a>
       </div>
     </form>
@@ -1168,13 +1168,13 @@ function admin_enquiries_view(): void
     <h1>Enquiries</h1>
     <p>Every message sent through the website. These are stored here even if the server cannot send email.</p>
   </div>
-  <a class="a-btn a-btn-ghost" href="admin.php?p=enquiries&amp;action=export">Download CSV ↓</a>
+  <a class="a-btn a-btn-ghost" href="?p=enquiries&amp;action=export">Download CSV ↓</a>
 </div>
 
 <div class="a-tabs">
-  <a href="admin.php?p=enquiries"<?= $filter === '' ? ' class="on"' : '' ?>>All</a>
+  <a href="?p=enquiries"<?= $filter === '' ? ' class="on"' : '' ?>>All</a>
   <?php foreach (['new' => 'New', 'read' => 'Read', 'replied' => 'Replied', 'archived' => 'Archived'] as $key => $label): ?>
-    <a href="admin.php?p=enquiries&amp;s=<?= e($key) ?>"<?= $filter === $key ? ' class="on"' : '' ?>><?= e($label) ?></a>
+    <a href="?p=enquiries&amp;s=<?= e($key) ?>"<?= $filter === $key ? ' class="on"' : '' ?>><?= e($label) ?></a>
   <?php endforeach; ?>
 </div>
 
@@ -1203,7 +1203,7 @@ function admin_enquiries_view(): void
       <p class="a-enquiry-body"><?= nl($row['message']) ?></p>
 
       <footer>
-        <form method="post" action="admin.php?p=enquiries">
+        <form method="post" action="?p=enquiries">
           <?= csrf_field() ?>
           <input type="hidden" name="do" value="enquiry_status">
           <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
@@ -1216,7 +1216,7 @@ function admin_enquiries_view(): void
         </form>
         <a class="a-btn a-btn-small" href="mailto:<?= e($row['email']) ?>?subject=<?= rawurlencode('Re: ' . $row['interest'] . ' — ' . setting('event_name')) ?>">Reply by email</a>
         <a class="a-btn a-btn-small a-btn-danger"
-           href="admin.php?p=enquiries&amp;action=delete&amp;id=<?= (int) $row['id'] ?>&amp;t=<?= e(csrf_token()) ?>"
+           href="?p=enquiries&amp;action=delete&amp;id=<?= (int) $row['id'] ?>&amp;t=<?= e(csrf_token()) ?>"
            data-confirm="Delete this enquiry permanently?">Delete</a>
       </footer>
     </article>
@@ -1238,7 +1238,7 @@ function admin_media_view(): void
   </div>
 </div>
 
-<form class="a-card a-upload-card" method="post" enctype="multipart/form-data" action="admin.php?p=media">
+<form class="a-card a-upload-card" method="post" enctype="multipart/form-data" action="?p=media">
   <?= csrf_field() ?>
   <input type="hidden" name="do" value="media_upload">
   <div class="a-field">
@@ -1265,7 +1265,7 @@ function admin_media_view(): void
           <a class="a-btn a-btn-small" href="<?= e(rawurlencode_path($path)) ?>" target="_blank" rel="noopener">Open</a>
           <?php if (str_starts_with($path, 'uploads/')): ?>
             <a class="a-btn a-btn-small a-btn-danger"
-               href="admin.php?p=media&amp;action=delete&amp;file=<?= rawurlencode($path) ?>&amp;t=<?= e(csrf_token()) ?>"
+               href="?p=media&amp;action=delete&amp;file=<?= rawurlencode($path) ?>&amp;t=<?= e(csrf_token()) ?>"
                data-confirm="Delete this file permanently? Any page still using it will show a broken image.">Delete</a>
           <?php else: ?>
             <span class="a-media-locked">Original file</span>
@@ -1304,9 +1304,9 @@ function admin_users_view(): void
           <td><?= $row['role'] === 'admin' ? 'Administrator' : 'Editor' ?></td>
           <td><?= $row['last_login'] !== '' ? e(date('d M Y, H:i', strtotime($row['last_login']))) : '—' ?></td>
           <td class="a-right a-actions">
-            <a class="a-btn a-btn-small" href="admin.php?p=users&amp;id=<?= (int) $row['id'] ?>">Edit</a>
+            <a class="a-btn a-btn-small" href="?p=users&amp;id=<?= (int) $row['id'] ?>">Edit</a>
             <a class="a-btn a-btn-small a-btn-danger"
-               href="admin.php?p=users&amp;action=delete&amp;id=<?= (int) $row['id'] ?>&amp;t=<?= e(csrf_token()) ?>"
+               href="?p=users&amp;action=delete&amp;id=<?= (int) $row['id'] ?>&amp;t=<?= e(csrf_token()) ?>"
                data-confirm="Delete this user account?">Delete</a>
           </td>
         </tr>
@@ -1317,7 +1317,7 @@ function admin_users_view(): void
 
   <section class="a-card">
     <h2><?= $editing ? 'Edit user' : 'Add a user' ?></h2>
-    <form method="post" action="admin.php?p=users">
+    <form method="post" action="?p=users">
       <?= csrf_field() ?>
       <input type="hidden" name="do" value="user_save">
       <input type="hidden" name="id" value="<?= (int) ($editing['id'] ?? 0) ?>">
@@ -1344,7 +1344,7 @@ function admin_users_view(): void
 
       <div class="a-form-actions">
         <button class="a-btn a-btn-primary" type="submit"><?= $editing ? 'Save user' : 'Create user' ?></button>
-        <?php if ($editing): ?><a class="a-btn a-btn-ghost" href="admin.php?p=users">Cancel</a><?php endif; ?>
+        <?php if ($editing): ?><a class="a-btn a-btn-ghost" href="?p=users">Cancel</a><?php endif; ?>
       </div>
     </form>
   </section>
@@ -1364,7 +1364,7 @@ function admin_account_view(array $user): void
 
 <section class="a-card" style="max-width:520px">
   <h2>Change your password</h2>
-  <form method="post" action="admin.php?p=account">
+  <form method="post" action="?p=account">
     <?= csrf_field() ?>
     <input type="hidden" name="do" value="account">
     <div class="a-field"><label for="c_current">Current password</label>

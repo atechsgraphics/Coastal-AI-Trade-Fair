@@ -6,10 +6,10 @@ declare(strict_types=1);
  * and resend that link when it has expired.
  */
 
-require __DIR__ . '/inc/bootstrap.php';
+require __DIR__ . '/../app/bootstrap.php';
 require_installed();
-require __DIR__ . '/inc/layout.php';
-require __DIR__ . '/inc/client-ui.php';
+require __DIR__ . '/../app/layout.php';
+require __DIR__ . '/../app/client-ui.php';
 
 start_session();
 bk_require_platform();
@@ -22,11 +22,11 @@ $tone    = 'error';
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     if (!csrf_check()) {
         bk_flash('error', 'Your session expired. Please try again.');
-        redirect('verify-email.php');
+        redirect('auth/verify-email.php');
     }
     if (!rate_limit('verifysend:' . client_ip(), 5, 900)) {
         bk_flash('error', 'Too many requests. Please wait fifteen minutes before asking for another link.');
-        redirect('verify-email.php');
+        redirect('auth/verify-email.php');
     }
 
     $email = strtolower(trim((string) ($_POST['email'] ?? '')));
@@ -43,7 +43,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 'Confirm your email address',
                 'Here is a fresh link to confirm your email address. It works for the next 48 hours.',
                 [],
-                [['text' => 'Confirm my email address', 'url' => bk_url('verify-email.php') . '?token=' . $token]],
+                [['text' => 'Confirm my email address', 'url' => bk_url('auth/verify-email.php') . '?token=' . $token]],
                 'If you did not ask for this, you can ignore this message.'
             ),
         ]);
@@ -51,7 +51,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
     // The same answer either way, so the form cannot be used to find accounts.
     bk_flash('ok', 'If that address needs confirming, a new link is on its way to it now.');
-    redirect('login.php');
+    redirect('auth/login.php');
 }
 
 /* ---- follow the link ---- */
@@ -96,17 +96,17 @@ bk_hero('CLIENT ACCOUNTS', $tone === 'ok' ? 'All {confirmed.}' : 'Confirm your {
       <div class="alert <?= $tone === 'ok' ? 'alert-ok' : 'alert-error' ?>" role="status"><?= e($message) ?></div>
 
       <?php if (!$showResend): ?>
-        <p><a class="btn btn-primary" href="account.php">Go to my bookings <span aria-hidden="true">→</span></a>
-           <a class="btn btn-ghost" href="booking.php">Make a booking</a></p>
+        <p><a class="btn btn-primary" href="<?= e(url('booking/account.php')) ?>">Go to my bookings <span aria-hidden="true">→</span></a>
+           <a class="btn btn-ghost" href="<?= e(url('booking/')) ?>">Make a booking</a></p>
       <?php else: ?>
-        <form method="post" action="verify-email.php" class="bk-form">
+        <form method="post" action="<?= e(url('auth/verify-email.php')) ?>" class="bk-form">
           <?= csrf_field() ?>
           <label class="field"><span>Your email address</span>
             <input type="email" name="email" required maxlength="190" autocomplete="email">
           </label>
           <div class="bk-form-actions">
             <button class="btn btn-primary" type="submit">Send me a new link</button>
-            <p><a class="text-link" href="login.php">Back to sign in</a></p>
+            <p><a class="text-link" href="<?= e(url('auth/login.php')) ?>">Back to sign in</a></p>
           </div>
         </form>
       <?php endif; ?>

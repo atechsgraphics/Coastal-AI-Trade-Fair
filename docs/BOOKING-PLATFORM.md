@@ -41,7 +41,7 @@ The nine statuses a booking moves through:
 ### 2.1 The database
 
 Nothing to run. The first time a page loads after these files are in place,
-the new tables are created automatically and `data/schema-version.lock`
+the new tables are created automatically and `storage/schema-version.lock`
 records that it is done.
 
 The migration is **additive only**: every statement is `CREATE TABLE IF NOT
@@ -50,7 +50,7 @@ check. No existing table, column or row is ever changed or dropped. It is safe
 to run against a live database and safe to re-run.
 
 To force it to run again (after an upgrade, say), delete
-`data/schema-version.lock` and load any page.
+`storage/schema-version.lock` and load any page.
 
 > **Back up first anyway.** Copy the whole `data` folder before upgrading, as
 > the main README already advises.
@@ -81,13 +81,13 @@ payments from outside Namibia.
 Proofs of payment, tickets and receipts are written to:
 
 ```
-data/proofs/     what clients upload
-data/tickets/    generated ticket PDFs
-data/receipts/   generated receipt PDFs
-data/tmp/        the PDF generator's font cache and the scaled logo
+storage/proofs/     what clients upload
+storage/tickets/    generated ticket PDFs
+storage/receipts/   generated receipt PDFs
+storage/tmp/        the PDF generator's font cache and the scaled logo
 ```
 
-They live under `data/`, which the site already blocks from the web, and each
+They live under `storage/`, which the site already blocks from the web, and each
 folder gets its own `.htaccess` and `web.config` denying everything. Files are
 stored under an unguessable random name — never the name the client uploaded.
 They are only ever served through `download.php`, which checks who is asking.
@@ -95,11 +95,11 @@ They are only ever served through `download.php`, which checks who is asking.
 **Check this by hand once, before going live.** Open
 
 ```
-https://yourdomain.com/data/proofs/
+https://yourdomain.com/storage/proofs/
 ```
 
 You should get an error page — not a file listing, and not a download. If a
-file comes back, ask your host to deny web access to the `data` folder. Once
+file comes back, ask your host to deny web access to the `storage` folder. Once
 you have checked, tick **Private storage confirmed** in *Site settings →
 Bookings & EFT*; the dashboard keeps reminding you until you do.
 
@@ -132,7 +132,7 @@ reason when one fails. The dashboard warns you when anything has failed.
 
 ### 2.6 Keeping the SMTP password out of the database
 
-Create `data/env.php`:
+Create `storage/env.php`:
 
 ```php
 <?php
@@ -144,7 +144,7 @@ return [
 
 Any booking setting can be overridden this way: the key is the setting name in
 capitals. The file is checked before the settings table and before the real
-environment, and it is inside `data/`, so it is never served to the web. Leave
+environment, and it is inside `storage/`, so it is never served to the web. Leave
 the password field in the panel blank and it keeps whatever is stored — the
 value is never printed back into the page.
 
@@ -232,16 +232,16 @@ screen.
 
 | File | What it does |
 | --- | --- |
-| `inc/migrate.php` | The additive database migration and every booking setting's default |
-| `inc/platform.php` | Shared core: config, client accounts, statuses, money, audit trail, private storage |
-| `inc/services.php` | Services, opening hours, blocked dates, slot generation, capacity |
-| `inc/eft.php` | Bookings, payments, proof uploads, approval, cancellation, emails, exports |
-| `inc/documents.php` | Tickets and receipts, rendered by `Core/dompdf` |
-| `inc/qr.php` | A small QR encoder, so tickets work without an internet connection |
-| `inc/mailer.php` | SMTP client, MIME assembly with attachments, the email template, logging |
-| `inc/client-ui.php` | Shared pieces for the public booking screens |
-| `inc/eft-admin.php` | Control-panel screens, settings tabs and readiness checks |
-| `inc/eft-actions.php` | What the control-panel booking forms post to |
+| `database/migrate.php` | The additive database migration and every booking setting's default |
+| `app/platform.php` | Shared core: config, client accounts, statuses, money, audit trail, private storage |
+| `app/services.php` | Services, opening hours, blocked dates, slot generation, capacity |
+| `app/eft.php` | Bookings, payments, proof uploads, approval, cancellation, emails, exports |
+| `app/documents.php` | Tickets and receipts, rendered by `Core/dompdf` |
+| `app/qr.php` | A small QR encoder, so tickets work without an internet connection |
+| `app/mailer.php` | SMTP client, MIME assembly with attachments, the email template, logging |
+| `app/client-ui.php` | Shared pieces for the public booking screens |
+| `app/eft-admin.php` | Control-panel screens, settings tabs and readiness checks |
+| `app/eft-actions.php` | What the control-panel booking forms post to |
 | `booking.php` | The public booking flow |
 | `account.php` | The client dashboard |
 | `pay.php` | EFT instructions and the proof-of-payment upload |
@@ -258,9 +258,9 @@ All changes are additive; nothing was removed or rewritten.
 
 | File | Change |
 | --- | --- |
-| `inc/bootstrap.php` | Loads `inc/platform.php` and runs the migration when the schema is out of date |
-| `inc/layout.php` | `site_head()` takes optional title/description/noindex arguments; the menu gains a *Sign in / My bookings* link and an editable button; adds `site_image()`, which serves right-sized copies of photographs |
-| `inc/admin-lib.php` | Merges in the booking resources, settings tabs and health checks; adds `decimal` and `password` field types and an `after_save` hook |
+| `app/bootstrap.php` | Loads `app/platform.php` and runs the migration when the schema is out of date |
+| `app/layout.php` | `site_head()` takes optional title/description/noindex arguments; the menu gains a *Sign in / My bookings* link and an editable button; adds `site_image()`, which serves right-sized copies of photographs |
+| `app/admin-lib.php` | Merges in the booking resources, settings tabs and health checks; adds `decimal` and `password` field types and an `after_save` hook |
 | `admin.php` | Routes and navigation for the booking screens; the list view gained `list_format` and `filter_options` hooks |
 | `assets/site.css` | A `bk-` block appended at the end |
 | `index.php` `partners.php` | Images now go through `site_image()` so they are sent at the size they are shown |
@@ -300,7 +300,7 @@ table was modified.
 ### 5.6 Settings and environment
 
 Every booking setting is editable in the panel and is prefixed `bk_`. Any of
-them can be overridden from `data/env.php` or the real environment using the
+them can be overridden from `storage/env.php` or the real environment using the
 name in capitals — `BK_SMTP_PASS`, `BK_SMTP_USER`, `BK_FROM_EMAIL`, and so on.
 `APP_URL` sets the website address used in emails and QR codes.
 
@@ -316,7 +316,7 @@ The photographs and logos in this site are full print resolution — the logo
 alone is 1.7 MB, and it appears in the header, the footer and the browser tab
 of every page. Sent as they are, the home page came to roughly 3.5 MB.
 
-`site_image($path, $width)` in `inc/layout.php` fixes that. It makes a copy at
+`site_image($path, $width)` in `app/layout.php` fixes that. It makes a copy at
 twice the size the image is actually shown, caches it in `uploads/cache`, and
 returns that address instead. A photograph stored as a PNG with no transparency
 is written out as a JPEG, which is far smaller; logos with an alpha channel stay
@@ -360,7 +360,7 @@ disposable.
 - Everything that happens to a booking — proof uploaded, payment approved or
   declined, ticket issued, email attempted, status changed, file viewed by
   staff — is written to `booking_audit` and shown on the booking screen.
-- Secrets belong in `data/env.php`, never in a file the web server serves.
+- Secrets belong in `storage/env.php`, never in a file the web server serves.
 
 ---
 

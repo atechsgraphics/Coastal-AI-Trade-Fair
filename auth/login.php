@@ -3,10 +3,10 @@ declare(strict_types=1);
 
 /** Client sign-in and sign-out. */
 
-require __DIR__ . '/inc/bootstrap.php';
+require __DIR__ . '/../app/bootstrap.php';
 require_installed();
-require __DIR__ . '/inc/layout.php';
-require __DIR__ . '/inc/client-ui.php';
+require __DIR__ . '/../app/layout.php';
+require __DIR__ . '/../app/client-ui.php';
 
 start_session();
 bk_require_platform();
@@ -14,11 +14,11 @@ bk_require_platform();
 if (($_GET['do'] ?? '') === 'logout') {
     client_logout();
     bk_flash('ok', 'You have been signed out.');
-    redirect('login.php');
+    redirect('auth/login.php');
 }
 
 if (client_logged_in()) {
-    redirect('account.php');
+    redirect('booking/account.php');
 }
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
@@ -26,18 +26,18 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
     if (!csrf_check()) {
         bk_flash('error', 'Your session expired. Please sign in again.');
-        redirect('login.php');
+        redirect('auth/login.php');
     }
     if (!rate_limit('clientlogin:' . client_ip(), 10, 900)) {
         bk_flash('error', 'Too many sign-in attempts from this connection. Please wait fifteen minutes and try again.');
-        redirect('login.php');
+        redirect('auth/login.php');
     }
 
     $problem = client_login($email, (string) ($_POST['password'] ?? ''));
     if ($problem !== null) {
         bk_keep_input(['email' => $email]);
         bk_flash('error', $problem);
-        redirect('login.php');
+        redirect('auth/login.php');
     }
 
     redirect(bk_take_redirect());
@@ -54,7 +54,7 @@ bk_hero('CLIENT ACCOUNTS', 'Welcome {back.}', 'Sign in to manage your bookings, 
     <?php bk_flash_render(); ?>
 
     <div class="bk-panel">
-      <form method="post" action="login.php" class="bk-form" autocomplete="on" novalidate>
+      <form method="post" action="<?= e(url('auth/login.php')) ?>" class="bk-form" autocomplete="on" novalidate>
         <?= csrf_field() ?>
 
         <label class="field"><span>Email address</span>
@@ -68,15 +68,15 @@ bk_hero('CLIENT ACCOUNTS', 'Welcome {back.}', 'Sign in to manage your bookings, 
         <div class="bk-form-actions">
           <button class="btn btn-primary" type="submit">Sign in <span aria-hidden="true">→</span></button>
           <p>
-            <a class="text-link" href="forgot-password.php">Forgotten your password?</a><br>
-            New here? <a class="text-link" href="register.php">Create an account</a>
+            <a class="text-link" href="<?= e(url('auth/forgot-password.php')) ?>">Forgotten your password?</a><br>
+            New here? <a class="text-link" href="<?= e(url('auth/register.php')) ?>">Create an account</a>
           </p>
         </div>
       </form>
     </div>
 
     <p class="bk-foot-note">
-      Staff sign in through the <a href="admin.php">control panel</a>.
+      Staff sign in through the <a href="<?= e(url('admin/')) ?>">control panel</a>.
     </p>
   </div>
 </section>

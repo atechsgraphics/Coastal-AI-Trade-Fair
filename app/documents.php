@@ -193,7 +193,7 @@ function bk_logo_thumbnail(string $path, string $mime, int $width): ?string
 /** The address a scanned ticket sends staff to. */
 function bk_ticket_verify_url(array $ticket): string
 {
-    return bk_url('verify-ticket.php') . '?code=' . rawurlencode((string) $ticket['verification_code']);
+    return bk_url('booking/verify-ticket.php') . '?code=' . rawurlencode((string) $ticket['verification_code']);
 }
 
 /* ============================================================= 2. TICKETS */
@@ -345,7 +345,7 @@ function bk_ticket_html(array $booking, array $ticket): string
                 . ($qr !== '' ? '<img class="qr" src="' . $qr . '" alt="">' : '')
                 . '<div class="code-label">VERIFICATION CODE</div>
                    <div class="code">' . e((string) $ticket['verification_code']) . '</div>
-                   <div class="code-note">Scan or enter this code at<br>' . e(bk_url('verify-ticket.php')) . '</div>
+                   <div class="code-note">Scan or enter this code at<br>' . e(bk_url('booking/verify-ticket.php')) . '</div>
              </td>
            </tr>
          </table>'

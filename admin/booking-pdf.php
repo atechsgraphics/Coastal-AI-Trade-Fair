@@ -9,10 +9,10 @@ declare(strict_types=1);
  *   • a signed-in member of the event team, with ?id=12
  */
 
-require __DIR__ . '/inc/bootstrap.php';
+require __DIR__ . '/../app/bootstrap.php';
 require_installed();
-require __DIR__ . '/inc/booking.php';
-require __DIR__ . '/inc/admin-lib.php';
+require __DIR__ . '/../app/booking.php';
+require __DIR__ . '/../app/admin-lib.php';
 
 $booking = null;
 
