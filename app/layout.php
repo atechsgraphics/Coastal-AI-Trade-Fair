@@ -403,7 +403,16 @@ function rawurlencode_path(string $path): string
  */
 function section_photo(string $settingKey, int $width = 700): string
 {
-    $path = trim(setting($settingKey));
+    return section_photo_path(trim(setting($settingKey)), $width);
+}
+
+/**
+ * The same thing for a path you already hold, rather than a setting name.
+ * Returns '' when the file is missing, so a caller can fall back cleanly.
+ */
+function section_photo_path(string $path, int $width = 700): string
+{
+    $path = trim($path);
     if ($path === '') {
         return '';
     }

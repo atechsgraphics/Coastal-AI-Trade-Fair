@@ -20,7 +20,27 @@ site_header('home');
 ?>
 
 <!-- ============================================================ HERO -->
-<section class="hero" id="top">
+<?php
+/* The pictures that fade behind the headline. Any that no longer exist are
+   dropped, and with none left the hero falls back to its plain background. */
+$slides = [];
+foreach (lines(setting('hero_slides')) as $slide) {
+    $url = section_photo_path($slide, 700);
+    if ($url !== '') {
+        $slides[] = $url;
+    }
+}
+?>
+<section class="hero<?= $slides ? ' has-slides' : '' ?>" id="top">
+  <?php if ($slides): ?>
+    <div class="hero-slides" aria-hidden="true" style="--slide-count:<?= count($slides) ?>">
+      <?php foreach ($slides as $i => $slide): ?>
+        <div class="hero-slide" style="--slide-index:<?= $i ?>">
+          <img src="<?= e($slide) ?>" alt=""<?= $i === 0 ? ' fetchpriority="high"' : ' loading="lazy"' ?>>
+        </div>
+      <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
   <div class="shell hero-grid">
     <div class="hero-text">
       <p class="hero-eyebrow"><span class="pulse" aria-hidden="true"></span><?= e(setting('hero_eyebrow')) ?></p>

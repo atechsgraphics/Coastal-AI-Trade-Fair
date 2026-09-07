@@ -14,7 +14,7 @@ declare(strict_types=1);
  */
 
 /** Bump this when new tables, columns or seed rows are added below. */
-const BOOKING_SCHEMA_VERSION = 8;
+const BOOKING_SCHEMA_VERSION = 9;
 
 function booking_schema_marker(): string
 {
@@ -399,6 +399,8 @@ function booking_setting_defaults(): array
         'bk_reference_prefix'       => 'ATF',
         'bk_site_url'               => '',
         'section_bg_image'          => 'images/generated/namibia-ai-coast-3d-v2.png',
+        'hero_slides'               => "images/generated/namibia-ai-hero-3d.png
+images/generated/namibia-ai-coast-3d-v2.png",
         'cta_bg_image'              => 'images/generated/namibia-ai-coast-3d-v2.png',
         'nav_cta_text'              => 'Book online',
         'nav_cta_link'              => 'booking/',

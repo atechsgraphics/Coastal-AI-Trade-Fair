@@ -1715,11 +1715,12 @@ em {
 /* On the pale inner pages the header is still dark, so no light variant is
    needed — but the mobile drawer is pale, so give it ink there. */
 @media (max-width: 980px) {
+  /* The slide-out drawer is dark, not pale — keep the button light on it. */
   .main-nav .nav-signin {
     justify-content: center;
-    margin: .4rem 0 0;
-    border-color: var(--line);
-    color: var(--ink);
+    margin: .6rem 0 0;
+    border-color: rgba(255, 255, 255, .22);
+    color: #fff;
   }
 }
 
@@ -1784,4 +1785,188 @@ em {
   .nav-signin { padding: .5rem .8rem; margin-left: .2rem; }
   .nav-signin svg { width: 14px; height: 14px; }
   .site-header .brand img { height: 54px; }
+}
+
+/* ==========================================================================
+   FIXES AND SECOND DESIGN PASS
+   ========================================================================== */
+
+/* ------------------------------------- 1. form fields on the white panels */
+/* The default field styling is written for dark sections: white text on a
+   barely-there background. Dropped onto a white card that made the sign-in
+   boxes, and their labels, completely invisible. These panels are light, so
+   they get the light treatment — the same one .light-panel already uses. */
+.bk-panel .field > span,
+.bk-aside .field > span,
+.bk-details .field > span { color: var(--muted); }
+
+.bk-panel .field input,
+.bk-panel .field select,
+.bk-panel .field textarea,
+.bk-aside .field input,
+.bk-aside .field select,
+.bk-aside .field textarea,
+.bk-details .field input,
+.bk-details .field select,
+.bk-details .field textarea {
+  color: var(--text);
+  background: #fff;
+  border-color: var(--line);
+}
+.bk-panel .field input:focus,
+.bk-panel .field select:focus,
+.bk-panel .field textarea:focus,
+.bk-aside .field input:focus,
+.bk-aside .field select:focus,
+.bk-aside .field textarea:focus,
+.bk-details .field input:focus,
+.bk-details .field select:focus,
+.bk-details .field textarea:focus {
+  background: #fff;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(34, 201, 240, .16);
+}
+.bk-panel .field-hint,
+.bk-aside .field-hint,
+.bk-details .field-hint { color: var(--muted); }
+
+.bk-panel .field input::placeholder,
+.bk-panel .field textarea::placeholder { color: #9aa8b4; }
+
+/* File pickers and the consent tick need the same treatment. */
+.bk-panel input[type="file"] { color: var(--text); }
+.bk-panel .consent { color: var(--text); }
+.bk-panel .terms-list li { color: var(--text); }
+
+/* Give the sign-in and register cards a comfortable width and a real presence
+   rather than a wide empty slab. */
+.bk-narrow .bk-panel { max-width: 30rem; margin-inline: auto; }
+.bk-narrow .bk-form-actions { flex-direction: column; align-items: stretch; gap: .9rem; }
+.bk-narrow .bk-form-actions .btn { width: 100%; }
+.bk-narrow .bk-form-actions p { text-align: center; }
+
+/* --------------------------------------------------- 2. the mobile drawer */
+/* backdrop-filter on the header makes it the containing block for any
+   position:fixed child, so the slide-out menu was being sized to the header
+   itself — about 128px tall — instead of the screen. That is why it could
+   not be opened properly on a phone. No blur on small screens, solid bar
+   instead, and the drawer gets the whole viewport back. */
+@media (max-width: 760px) {
+  .site-header,
+  .site-header.scrolled {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--ink);
+  }
+  .main-nav { z-index: 100; }
+}
+
+/* ------------------------------------------------ 3. the logo, floating */
+/* No plate, no border, no blur — just the mark itself with enough shadow to
+   hold its own against whatever sits behind it. */
+.hero-badge {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  padding: 0;
+  width: clamp(104px, 14vw, 148px);
+  right: -1rem;
+  bottom: -2rem;
+  filter: drop-shadow(0 10px 26px rgba(0, 0, 0, .65));
+  animation: badge-float 6s ease-in-out infinite;
+}
+.hero-badge img { display: block; width: 100%; height: auto; }
+
+@keyframes badge-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-badge { animation: none; }
+}
+
+/* ------------------------------------ 4. the home page background slides */
+.hero.has-slides { position: relative; isolation: isolate; overflow: hidden; }
+
+.hero-slides { position: absolute; inset: 0; z-index: -1; }
+.hero-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  animation: slide-cycle calc(var(--slide-count, 2) * 7s) ease-in-out infinite;
+  animation-delay: calc(var(--slide-index, 0) * 7s);
+}
+.hero-slide img { width: 100%; height: 100%; object-fit: cover; object-position: center; }
+
+/* The wash that keeps every word legible whatever the picture is doing. */
+.hero-slides::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* Dense behind the headline so every word holds, thinning out to the right
+     where the picture can actually be seen. */
+  background:
+    linear-gradient(96deg, var(--ink) 0%, rgba(4, 18, 31, .95) 24%, rgba(4, 18, 31, .72) 46%, rgba(4, 18, 31, .34) 74%, rgba(4, 18, 31, .30) 100%),
+    linear-gradient(180deg, rgba(4, 18, 31, .55) 0%, rgba(4, 18, 31, 0) 30%, rgba(4, 18, 31, 0) 62%, var(--ink) 100%);
+}
+
+@keyframes slide-cycle {
+  0%    { opacity: 0; transform: scale(1.06); }
+  6%    { opacity: 1; }
+  /* each picture holds while the others wait their turn */
+  44%   { opacity: 1; transform: scale(1); }
+  50%   { opacity: 0; }
+  100%  { opacity: 0; transform: scale(1.06); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-slide { animation: none; }
+  .hero-slide:first-child { opacity: 1; }
+}
+
+/* ------------------------------- 5. on a phone, the words come first */
+@media (max-width: 900px) {
+  /* The picture was pushed above the headline. Read the promise first, then
+     see the picture. */
+  .hero-visual { order: 1; max-width: 560px; margin-inline: auto; }
+  .hero-text { order: 0; }
+}
+
+@media (max-width: 760px) {
+  /* With a picture already behind the hero, the framed one is a repeat on a
+     small screen — keep the floating mark, lose the frame. */
+  .hero.has-slides .hero-visual .frame { display: none; }
+  .hero.has-slides .hero-badge {
+    position: static;
+    margin: 0 auto;
+    width: 118px;
+    animation: none;
+  }
+  .hero { padding-top: 6.5rem; }
+  .hero h1 { font-size: clamp(2.1rem, 10vw, 3rem); }
+  .hero-actions { flex-direction: column; align-items: stretch; }
+  .hero-actions .btn { width: 100%; }
+}
+
+/* --------------------------------------------- 6. scaling on small phones */
+@media (max-width: 420px) {
+  .shell { --shell: min(1240px, 100% - 2rem); }
+  .cd-unit { min-width: 0; }
+  .countdown-clock { gap: .4rem; }
+  .cd-unit strong { font-size: 1.5rem; }
+  .hero-stats { gap: 1rem 1.25rem; }
+  .btn { padding: 0 1.25rem; font-size: .84rem; }
+}
+
+/* On a phone the text runs the full width, so a side-to-side wash would either
+   bury the picture or lose the words. A gentler, even veil instead: the coast
+   stays visible behind everything, and the copy still reads. */
+@media (max-width: 760px) {
+  .hero-slides::after {
+    background:
+      linear-gradient(180deg, rgba(4, 18, 31, .92) 0%, rgba(4, 18, 31, .66) 22%, rgba(4, 18, 31, .6) 58%, var(--ink) 100%);
+  }
+  .hero-slide img { object-position: 62% center; }
 }

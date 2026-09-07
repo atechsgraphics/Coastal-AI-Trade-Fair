@@ -795,6 +795,7 @@ function admin_setting_groups(): array
                 'hero_alt_text'   => ['label' => 'Second button text', 'type' => 'text'],
                 'hero_alt_link'   => ['label' => 'Second button link', 'type' => 'text'],
                 'hero_image'      => ['label' => 'Hero image', 'type' => 'image'],
+                'hero_slides'     => ['label' => 'Home page background slides', 'type' => 'list', 'rows' => 4, 'help' => 'One picture per line. Two or more fade slowly from one to the next behind the home page headline. Leave blank for a plain background.'],
                 'hero_image_alt'  => ['label' => 'Hero image description', 'type' => 'text', 'help' => 'Read aloud by screen readers.'],
                 'about_label'     => ['label' => 'About — small label', 'type' => 'text'],
                 'about_title'     => ['label' => 'About — headline', 'type' => 'textarea', 'rows' => 2],
