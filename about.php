@@ -8,6 +8,7 @@ require __DIR__ . '/app/layout.php';
 $page     = site_head('about');
 $stats    = blocks('about', 'stats');
 $features = blocks('about', 'features');
+$structure = blocks('about', 'structure');
 
 site_header('about');
 page_hero($page);
@@ -32,6 +33,24 @@ page_hero($page);
     <?php endif; ?>
   </div>
 </section>
+
+<?php if ($structure): ?>
+  <section class="section tight">
+    <div class="shell">
+      <?php section_head('WHAT THE FOUR DAYS HOLD', 'One week, {four ways in.}'); ?>
+      <div class="structure-grid">
+        <?php foreach ($structure as $i => $item): ?>
+          <article class="structure-card reveal reveal-delay-<?= min($i, 3) ?>">
+            <?php if ($item['icon'] !== ''): ?><span class="structure-icon" aria-hidden="true"><?= e($item['icon']) ?></span><?php endif; ?>
+            <h3><?= e($item['title']) ?></h3>
+            <?php if ($item['subtitle'] !== ''): ?><p class="structure-when"><?= e($item['subtitle']) ?></p><?php endif; ?>
+            <p><?= nl($item['body']) ?></p>
+          </article>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  </section>
+<?php endif; ?>
 
 <?php if ($features): ?>
   <section class="section on-dark">

@@ -154,7 +154,7 @@ function admin_resources(): array
             'singular' => 'card',
             'group'    => 'Site structure',
             'icon'     => '▣',
-            'intro'    => 'The small repeating cards across the site: hero statistics, the Learn / Connect / Grow trio, the About numbers, "who you will meet" and the masterclass tracks.',
+            'intro'    => 'The small repeating cards across the site: hero statistics, the Learn / Connect / Grow trio, the About numbers, what the four days hold, "who you will meet" and the masterclass tracks.',
             'list'     => ['title' => 'Title', 'subtitle' => 'Subtitle', 'section' => 'Where it appears'],
             'filter'   => ['section' => 'Section'],
             'fields'   => [
@@ -322,6 +322,7 @@ function admin_block_sections(): array
         'home|focus'        => 'Home — Learn / Connect / Grow cards',
         'about|stats'       => 'About — key numbers',
         'about|features'    => 'About — what makes it different',
+        'about|structure'   => 'About — what the four days hold',
         'exhibit|audience'  => 'Exhibit — who you will meet',
         'programme|tracks'  => 'Programme — masterclass tracks',
     ];

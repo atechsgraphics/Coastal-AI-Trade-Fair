@@ -280,9 +280,9 @@ function seed_settings(): void
         'venue_map_url'    => 'https://www.google.com/maps/search/?api=1&query=Mondesa+Multipurpose+Centre+Hall+Swakopmund',
 
         /* Contact */
-        'email_primary'    => 'coastalaisummit@gmail.com',
-        'email_secondary'  => 'coastaltradefair@gmail.com',
-        'email_form_to'    => 'coastalaisummit@gmail.com, coastaltradefair@gmail.com',
+        'email_primary'    => 'info@coastalaitradefair.com',
+        'email_secondary'  => 'mary@coastalaitradefair.com',
+        'email_form_to'    => 'info@coastalaitradefair.com, mary@coastalaitradefair.com',
         'phone_1'          => '+264 85 240 0750',
         'phone_2'          => '+264 81 040 0750',
         'phone_3'          => '+264 85 800 8906',
@@ -306,7 +306,7 @@ function seed_settings(): void
         'bank_branch_code'     => '280172',
         'bank_account_type'    => 'Business Cheque Account',
         'payment_reference'    => 'Your company name',
-        'payment_proof_email'  => 'coastalaisummit@gmail.com',
+        'payment_proof_email'  => 'info@coastalaitradefair.com',
         'terms_confirmation'   => 'Stalls and masterclass seats are only reserved upon receipt of proof of payment.',
         'terms_allocations'    => 'Prime stall locations are assigned on a first-paid, first-served basis.',
         'terms_cancellations'  => '50% refund if cancelled 30 days prior to the event; non-refundable thereafter.',

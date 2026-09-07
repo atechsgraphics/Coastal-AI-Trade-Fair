@@ -14,7 +14,7 @@ declare(strict_types=1);
  */
 
 /** Bump this when new tables, columns or seed rows are added below. */
-const BOOKING_SCHEMA_VERSION = 9;
+const BOOKING_SCHEMA_VERSION = 10;
 
 function booking_schema_marker(): string
 {
@@ -304,6 +304,7 @@ SQL;
     booking_add_columns();
     booking_seed_settings();
     booking_seed_page();
+    booking_correct_content();
     booking_prepare_storage();
 
     @file_put_contents(booking_schema_marker(), (string) BOOKING_SCHEMA_VERSION);
@@ -476,5 +477,180 @@ function booking_prepare_storage(): void
         if (!is_file($path . '/index.html')) {
             @file_put_contents($path . '/index.html', '');
         }
+    }
+}
+
+
+/* ==========================================================================
+   CONTENT THE EVENT TEAM CONFIRMED (schema version 10)
+   --------------------------------------------------------------------------
+   The team supplied its final details after the site was first seeded: the
+   two mailboxes on the event's own domain, and the fact that the AI & Digital
+   Masterclass runs for three days alongside the four-day fair, not four.
+
+   Every change below is conditional. A setting is rewritten only while it
+   still holds the exact value the installer wrote, and wording is only
+   touched where the stale phrase is still present, so anything the team has
+   since edited in the control panel survives. Running it twice changes
+   nothing the second time.
+   ========================================================================== */
+
+/** Replace a setting, but only while it still holds the value we seeded. */
+function booking_setting_correct(string $key, string $stale, string $fresh): void
+{
+    $column = db_name('key');
+    $row = db_one("SELECT value AS v FROM settings WHERE {$column} = :k", [':k' => $key]);
+    if ($row === null) {
+        db_setting_put_missing($key, $fresh);
+        return;
+    }
+    if (trim((string) $row['v']) === $stale) {
+        db_run("UPDATE settings SET value = :v WHERE {$column} = :k", [':v' => $fresh, ':k' => $key]);
+    }
+}
+
+/** Give a setting a value only while it is still empty. */
+function booking_setting_fill(string $key, string $value): void
+{
+    $column = db_name('key');
+    $row = db_one("SELECT value AS v FROM settings WHERE {$column} = :k", [':k' => $key]);
+    if ($row === null) {
+        db_setting_put_missing($key, $value);
+        return;
+    }
+    if (trim((string) $row['v']) === '') {
+        db_run("UPDATE settings SET value = :v WHERE {$column} = :k", [':v' => $value, ':k' => $key]);
+    }
+}
+
+function booking_correct_content(): void
+{
+    booking_correct_email_addresses();
+    booking_correct_masterclass_length();
+    booking_seed_event_structure();
+}
+
+/**
+ * The site was seeded with two gmail addresses. The event runs its own
+ * mailboxes now. The booking side had no sender, reply-to or staff recipient
+ * configured at all, so confirmations had nowhere to come from and new
+ * bookings notified nobody.
+ */
+function booking_correct_email_addresses(): void
+{
+    $primary   = 'info@coastalaitradefair.com';
+    $secondary = 'mary@coastalaitradefair.com';
+    $both      = $primary . ', ' . $secondary;
+
+    booking_setting_correct('email_primary', 'coastalaisummit@gmail.com', $primary);
+    booking_setting_correct('email_secondary', 'coastaltradefair@gmail.com', $secondary);
+    booking_setting_correct(
+        'email_form_to',
+        'coastalaisummit@gmail.com, coastaltradefair@gmail.com',
+        $both
+    );
+    booking_setting_correct('payment_proof_email', 'coastalaisummit@gmail.com', $primary);
+
+    booking_setting_fill('bk_from_email', $primary);
+    booking_setting_fill('bk_reply_to', $primary);
+    booking_setting_fill('bk_admin_emails', $both);
+
+    $keyColumn = db_name('key');
+    $eventName = db_one("SELECT value AS v FROM settings WHERE {$keyColumn} = 'event_name'");
+    booking_setting_fill('bk_from_name', trim((string) ($eventName['v'] ?? 'Coastal AI Summit & SME Trade Fair')));
+}
+
+/**
+ * The masterclass is a three-day track running alongside the four-day fair.
+ * The booking listing and the rate card both called it four days.
+ */
+function booking_correct_masterclass_length(): void
+{
+    $stale = 'Full 4-day training';
+    $fresh = 'Full 3-day training';
+
+    foreach (db_all("SELECT id, summary, description FROM services WHERE summary LIKE '%4-day training%' OR description LIKE '%4-day training%'") as $row) {
+        db_run(
+            'UPDATE services SET summary = :s, description = :d WHERE id = :id',
+            [
+                ':s'  => str_replace($stale, $fresh, (string) $row['summary']),
+                ':d'  => str_replace($stale, $fresh, (string) $row['description']),
+                ':id' => (int) $row['id'],
+            ]
+        );
+    }
+
+    foreach (db_all("SELECT id, details FROM stalls WHERE details LIKE '%4-day training%'") as $row) {
+        db_run(
+            'UPDATE stalls SET details = :d WHERE id = :id',
+            [':d' => str_replace($stale, $fresh, (string) $row['details']), ':id' => (int) $row['id']]
+        );
+    }
+
+    db_run(
+        "UPDATE services SET instructions = :new WHERE instructions = :old AND slug = 'ai-masterclass-ticket-sme'",
+        [
+            ':old' => 'Please arrive 15 minutes before the first session. This ticket covers the full programme, 30 September to 3 October 2026.',
+            ':new' => 'Please arrive 15 minutes before the first session. This ticket covers all three masterclass days, 30 September to 2 October 2026.',
+        ]
+    );
+}
+
+/**
+ * The site described the character of the event but never said what it
+ * actually consists of. These are the pillars from the event's own executive
+ * summary. Seeded only when the section is empty, so the team's own wording
+ * is never replaced.
+ */
+function booking_seed_event_structure(): void
+{
+    if (db_one("SELECT id FROM blocks WHERE page = 'about' AND section = 'structure'")) {
+        return;
+    }
+
+    $cards = [
+        [
+            '2-Day High-Level Summit',
+            '30 September – 01 October',
+            'Keynotes, policy panels and sector-specific roundtables on AI integration in Namibian industry, trade readiness and regional investment.',
+            '◈',
+        ],
+        [
+            '4-Day SME Exhibition & Trade Fair',
+            '30 September – 03 October',
+            'A high-foot-traffic corporate and small-business exhibition showcasing local products, digital solutions and enterprise services.',
+            '▣',
+        ],
+        [
+            '3-Day AI & Digital Masterclass',
+            'Featured track · 30 September – 02 October',
+            'A hands-on intensive running alongside the trade fair, equipping MSMEs, operational managers and tech professionals with practical tools to automate and scale.',
+            '✦',
+        ],
+        [
+            'Executive & Investor Networking',
+            'Across all four days',
+            'Dedicated B2B matchmaking, executive lounge access and structured pitch platforms connecting investors with growth-stage businesses.',
+            '↗',
+        ],
+    ];
+
+    foreach ($cards as $position => $card) {
+        db_run(
+            'INSERT INTO blocks (page, section, title, subtitle, body, icon, image, link_text, link_url, position, is_active)
+             VALUES (:page, :section, :title, :subtitle, :body, :icon, :image, :lt, :lu, :pos, 1)',
+            [
+                ':page'     => 'about',
+                ':section'  => 'structure',
+                ':title'    => $card[0],
+                ':subtitle' => $card[1],
+                ':body'     => $card[2],
+                ':icon'     => $card[3],
+                ':image'    => '',
+                ':lt'       => '',
+                ':lu'       => '',
+                ':pos'      => $position,
+            ]
+        );
     }
 }
