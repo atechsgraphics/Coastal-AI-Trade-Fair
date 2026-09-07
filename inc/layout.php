@@ -80,12 +80,6 @@ function site_header(string $slug): void
       <?php foreach (nav_pages() as $item): ?>
         <a href="<?= e($item['slug']) ?>.php"<?= $item['slug'] === $slug ? ' class="active" aria-current="page"' : '' ?>><?= e($item['nav_label']) ?></a>
       <?php endforeach; ?>
-      <?php if (function_exists('bk_enabled') && bk_enabled() && setting_bool('bk_nav_enabled', true)): ?>
-        <a class="nav-account<?= in_array($slug, ['account', 'login', 'register'], true) ? ' active' : '' ?>"
-           href="<?= client_logged_in() ? 'account.php' : 'login.php' ?>">
-          <span class="nav-account-dot" aria-hidden="true"></span><?= client_logged_in() ? 'My bookings' : 'Sign in' ?>
-        </a>
-      <?php endif; ?>
       <?php if (setting_bool('registration_open', true) && setting('nav_cta_text') !== ''): ?>
         <a class="nav-cta" href="<?= e(setting('nav_cta_link', 'booking.php')) ?>"><?= e(setting('nav_cta_text', 'Book online')) ?> <span aria-hidden="true">↗</span></a>
       <?php endif; ?>
@@ -182,6 +176,10 @@ function site_footer(): void
       <?php endforeach; ?>
       <?php if (setting('registration_form') !== ''): ?>
         <p><a href="<?= e(rawurlencode_path(setting('registration_form'))) ?>" download>Registration form ↓</a></p>
+      <?php endif; ?>
+      <?php if (function_exists('bk_enabled') && bk_enabled() && setting_bool('bk_nav_enabled', true)): ?>
+        <p><a href="booking.php">Book online</a></p>
+        <p><a href="<?= client_logged_in() ? 'account.php' : 'login.php' ?>"><?= client_logged_in() ? 'My bookings' : 'Sign in' ?></a></p>
       <?php endif; ?>
     </div>
   </div>
