@@ -6,7 +6,10 @@
   /* -------------------------------------------------- 1. Mobile navigation */
   var nav = document.getElementById('mainNav');
   var toggle = document.querySelector('.menu-toggle');
-  var mobile = window.matchMedia('(max-width: 760px)');
+  // Must match the breakpoint the drawer is styled at. The row of links needs
+  // about 1000px once the sign-in button is in it, so the drawer takes over
+  // for tablets as well, not only phones.
+  var mobile = window.matchMedia('(max-width: 980px)');
 
   if (nav && toggle) {
     var backdrop = document.createElement('div');

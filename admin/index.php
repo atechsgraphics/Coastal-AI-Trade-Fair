@@ -449,14 +449,14 @@ function admin_head(string $route): void
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Control panel · <?= e(setting('site_name')) ?></title>
-<link rel="icon" href="<?= e(img_src(setting('logo'))) ?>">
+<link rel="icon" href="<?= e(site_image(setting('logo'), 32)) ?>">
 <link rel="stylesheet" href="assets/admin.css?v=<?= e(asset_version('assets/admin.css')) ?>">
 </head>
 <body>
 <div class="a-shell">
   <aside class="a-side" id="aSide">
     <a class="a-brand" href="./">
-      <img src="<?= e(img_src(setting('logo'))) ?>" alt="">
+      <img src="<?= e(site_image(setting('logo'), 44)) ?>" alt="">
       <span><?= e(setting('site_name')) ?><small>Control panel</small></span>
     </a>
 
@@ -550,12 +550,12 @@ function admin_login_view(string $error): void
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Sign in · <?= e(setting('site_name')) ?></title>
-<link rel="icon" href="<?= e(img_src(setting('logo'))) ?>">
+<link rel="icon" href="<?= e(site_image(setting('logo'), 32)) ?>">
 <link rel="stylesheet" href="assets/admin.css?v=<?= e(asset_version('assets/admin.css')) ?>">
 </head>
 <body class="a-login-body">
   <main class="a-login">
-    <img class="a-login-logo" src="<?= e(img_src(setting('logo'))) ?>" alt="<?= e(setting('event_name')) ?>">
+    <img class="a-login-logo" src="<?= e(site_image(setting('logo'), 100)) ?>" alt="<?= e(setting('event_name')) ?>">
     <h1>Control panel</h1>
     <p class="a-login-sub">Sign in to manage <?= e(setting('site_name')) ?>.</p>
 

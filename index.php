@@ -76,7 +76,7 @@ foreach (lines(setting('hero_slides')) as $slide) {
         <div class="frame">
           <img src="<?= e(site_image(setting('hero_image'), 760)) ?>" alt="<?= e(setting('hero_image_alt')) ?>" fetchpriority="high">
         </div>
-        <div class="hero-badge"><img src="<?= e(site_image(setting('logo'), 130)) ?>" alt="<?= e(setting('event_name')) ?> logo"></div>
+        <div class="hero-badge"><img src="<?= e(site_image(setting('logo'), 180)) ?>" alt="<?= e(setting('event_name')) ?> logo"></div>
       </div>
     <?php endif; ?>
   </div>

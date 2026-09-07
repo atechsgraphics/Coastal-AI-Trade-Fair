@@ -136,7 +136,7 @@ function countdown(string $variant = 'hero'): void
 
 function site_footer(): void
 {
-    $logo = site_image(setting('logo'), 110);
+    $logo = site_image(setting('logo'), 150);
     $socials = array_filter([
         'Facebook'  => setting('facebook'),
         'Instagram' => setting('instagram'),

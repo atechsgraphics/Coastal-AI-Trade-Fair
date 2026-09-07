@@ -1674,19 +1674,7 @@ em {
 /* Give the white logo plates a little more room to breathe. */
 .logo-card { padding-bottom: 1.1rem; }
 
-/* --------------------------------------------------- 2. a visible brandmark */
-.site-header .brand img {
-  height: 62px;
-  width: auto;
-  filter: drop-shadow(0 2px 10px rgba(0, 0, 0, .55));
-}
-.site-header.scrolled .brand img { height: 50px; }
-.footer-brand .brand img { height: 72px; width: auto; }
-
-@media (max-width: 720px) {
-  .site-header .brand img { height: 50px; }
-  .site-header.scrolled .brand img { height: 44px; }
-}
+/* The brandmark is set once, at the end of this file. */
 
 /* ------------------------------------------------------ 3. the sign-in button */
 .nav-signin {
@@ -1784,7 +1772,6 @@ em {
   .main-nav a { padding-left: .55rem; padding-right: .55rem; font-size: .82rem; }
   .nav-signin { padding: .5rem .8rem; margin-left: .2rem; }
   .nav-signin svg { width: 14px; height: 14px; }
-  .site-header .brand img { height: 54px; }
 }
 
 /* ==========================================================================
@@ -1969,4 +1956,168 @@ em {
       linear-gradient(180deg, rgba(4, 18, 31, .92) 0%, rgba(4, 18, 31, .66) 22%, rgba(4, 18, 31, .6) 58%, var(--ink) 100%);
   }
   .hero-slide img { object-position: 62% center; }
+}
+
+/* ==========================================================================
+   THE BRANDMARK
+   The logo was being sized by five different rules at five breakpoints, so it
+   stepped between 44, 50, 54, 62 and 72px with nothing lining up. It is set
+   once here instead: a single height that every place inherits, so the header,
+   the footer and the hero badge stay in proportion with each other on every
+   screen.
+   ========================================================================== */
+
+:root {
+  /* Grows with the window between a phone and a desktop, then stops. */
+  --brand-h: clamp(46px, 5.2vw, 60px);
+  --brand-h-scrolled: calc(var(--brand-h) * .82);
+}
+
+/* ------------------------------------------------------------ the header */
+/* A fixed box for the mark means the header never changes height between
+   pages, and align-items:center on .header-inner then centres it against the
+   navigation without any nudging. */
+.site-header .brand {
+  display: flex;
+  align-items: center;
+  flex: none;
+  height: var(--brand-h);
+  line-height: 0;
+  transition: height .3s var(--ease);
+}
+.site-header .brand img {
+  height: 100%;
+  width: auto;
+  max-width: none;
+  display: block;
+  object-fit: contain;
+  /* Enough lift to read against a photograph, not so much that it haloes. */
+  filter: drop-shadow(0 2px 9px rgba(0, 0, 0, .5));
+  transition: none;
+}
+.site-header.scrolled .brand { height: var(--brand-h-scrolled); }
+.site-header.scrolled .brand img { height: 100%; }
+
+/* The mark sits on the same left edge as every heading on the page, because
+   .header-inner and .shell are both width:var(--shell) centred. Nothing to
+   correct — just make sure nothing squashes it. */
+.header-inner > .brand { margin-right: auto; }
+
+/* ------------------------------------------------------------ the footer */
+.footer-brand .brand {
+  display: block;
+  height: calc(var(--brand-h) * 1.24);
+  margin-bottom: 1.2rem;
+  line-height: 0;
+}
+.footer-brand .brand img {
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  display: block;
+  object-fit: contain;
+  margin-bottom: 0;
+}
+
+/* ------------------------------------------------------- the hero badge */
+/* Its right edge lines up with the frame, which lines up with the shell, so
+   the mark reads as part of the layout instead of hanging off the page. It
+   still laps over the bottom edge, which is what makes it float. */
+.hero-badge {
+  right: 0;
+  bottom: -1.75rem;
+  width: clamp(96px, 12vw, 136px);
+  pointer-events: none;
+}
+.hero-badge img { object-fit: contain; }
+
+/* --------------------------------------------------------- small screens */
+@media (max-width: 980px) {
+  /* The drawer opens from the right, so the mark keeps the left to itself. */
+  :root { --brand-h: clamp(44px, 8.5vw, 56px); }
+}
+
+@media (max-width: 760px) {
+  :root { --brand-h: 46px; --brand-h-scrolled: 40px; }
+
+  /* With the artwork already behind the hero the badge is the only mark in
+     view, so it gets centred and given room rather than tucked in a corner. */
+  .hero.has-slides .hero-badge { width: clamp(104px, 30vw, 124px); }
+}
+
+@media (max-width: 380px) {
+  :root { --brand-h: 42px; --brand-h-scrolled: 38px; }
+  .header-inner { gap: .75rem; }
+}
+
+/* ==========================================================================
+   MESSAGES ON THE PALE SECTIONS
+   .alert is written for the dark bands: pale pink text on a barely-there red.
+   Dropped onto the pale background of a sign-in or booking page that left
+   "Please choose a password of at least 10 characters" almost invisible.
+   The light treatment .light-panel already defines becomes the default; the
+   dark bands keep the dark one.
+   ========================================================================== */
+
+.section .alert-ok    { background: #e7f8fd; border-color: #9fe0f2; color: #0b4d61; }
+.section .alert-error { background: #fdecec; border-color: #f3b7b7; color: #8b2020; }
+.section .alert-warn  { background: #fff6e6; border-color: #f0d19a; color: #7a4c05; }
+.section .alert { font-weight: 500; }
+
+/* Dark bands, and anything explicitly on dark, keep the original palette. */
+.section.on-dark .alert-ok,
+.dark-panel .alert-ok,
+.hero .alert-ok,
+.page-hero .alert-ok { background: rgba(34, 201, 240, .12); border-color: rgba(34, 201, 240, .45); color: #cdf3ff; }
+
+.section.on-dark .alert-error,
+.dark-panel .alert-error,
+.hero .alert-error,
+.page-hero .alert-error { background: rgba(255, 96, 96, .12); border-color: rgba(255, 96, 96, .45); color: #ffd4d4; }
+
+/* Keep the message with the form it belongs to rather than stranded in the
+   middle of an empty band. */
+.bk-narrow .alert { max-width: 30rem; margin-inline: auto; }
+
+/* ==========================================================================
+   THE MENU ON A TABLET
+   The slide-out menu only took over below 760px, but the row of links needs
+   about 1000px now that it carries a sign-in button as well. Between those
+   two figures the menu ran off the side of the page and took the whole layout
+   with it: an iPad in portrait scrolled sideways to 934px. The drawer covers
+   that band too now. Everything below 760px is untouched.
+   ========================================================================== */
+
+@media (min-width: 761px) and (max-width: 980px) {
+  .menu-toggle { display: flex; }
+
+  .main-nav {
+    position: fixed; inset: 0 0 0 auto; width: min(340px, 84vw);
+    flex-direction: column; align-items: stretch; justify-content: flex-start; gap: .3rem;
+    padding: 6rem 1.5rem 2rem;
+    background: linear-gradient(180deg, var(--ink), var(--ink-2));
+    border-left: 1px solid rgba(255, 255, 255, .1);
+    transform: translateX(100%); transition: transform .38s var(--ease);
+    overflow-y: auto;
+    z-index: 100;
+  }
+  .main-nav.open { transform: none; box-shadow: -30px 0 80px rgba(0, 0, 0, .5); }
+  .main-nav a { padding: .95rem 1rem; font-size: 1rem; border-radius: var(--radius-sm); }
+  .main-nav a.active::after { left: 1rem; right: auto; width: 18px; bottom: .6rem; }
+  .main-nav .nav-cta { margin: .8rem 0 0; justify-content: center; display: flex; }
+
+  .nav-backdrop {
+    position: fixed; inset: 0; background: rgba(4, 18, 31, .6); backdrop-filter: blur(3px);
+    opacity: 0; pointer-events: none; transition: opacity .3s var(--ease); z-index: 99;
+  }
+  body.menu-open .nav-backdrop { opacity: 1; pointer-events: auto; }
+
+  /* Same reason as on a phone: a blurred header becomes the containing block
+     for the drawer and shrinks it to the height of the bar. */
+  .site-header,
+  .site-header.scrolled {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--ink);
+  }
 }
