@@ -269,8 +269,9 @@ page_hero($page);
             </label>
           </div>
 
-          <label class="hp-field" aria-hidden="true">Leave this empty
-            <input type="text" name="website" tabindex="-1" autocomplete="off">
+          <?= bot_trap_fields() ?>
+          <label class="hp-field" aria-hidden="true" hidden>Leave this empty
+            <input type="text" name="website_2" tabindex="-1" autocomplete="off">
           </label>
 
           <div class="booking-submit">

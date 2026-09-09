@@ -601,3 +601,14 @@ code { background: var(--a-bg); padding: .1em .4em; border-radius: 4px; font-siz
   .a-cal-cell { min-height: 4.5rem; }
   .a-cal-item { white-space: normal; }
 }
+
+/* The first-run password screen borrows the sign-in card, which is a light
+   card on a dark page — so this takes the same muted ink as .a-login-sub
+   rather than the white used on the dark background behind it. */
+.a-login-intro {
+  margin: .55rem 0 1.6rem;
+  color: var(--a-muted);
+  font-size: .9rem;
+  line-height: 1.55;
+  text-align: center;
+}

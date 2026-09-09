@@ -84,8 +84,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         if (!isset($_POST['agreed'])) {
             bk_flash('error', 'Please accept the booking terms before confirming.');
             $step = 'review';
+        } elseif (($trap = bot_trap_problem(4)) !== null) {
+            // A form filled faster than any person could, or with the hidden
+            // field completed. Logged, then answered exactly like a success so
+            // a script learns nothing from the reply.
+            bot_trap_log('booking', $trap);
+            bk_flash('ok', 'Thank you. Your booking request has been received.');
+            redirect('booking/');
         } elseif (!rate_limit('booknew:' . client_ip(), 12, 3600)) {
             bk_flash('error', 'Too many bookings have been started from this connection. Please try again later.');
+            redirect('booking/');
+        } elseif (bot_trap_text_problem($input['extra_details'] . ' ' . $input['client_notes']) !== null) {
+            bot_trap_log('booking', 'advertising text');
+            bk_flash('ok', 'Thank you. Your booking request has been received.');
             redirect('booking/');
         } else {
             $result = bk_create_booking($input, $client);
@@ -240,6 +251,7 @@ elseif ($step === 'review'):
 
         <form method="post" action="<?= e(url('booking/?step=confirm')) ?>" class="bk-form">
           <?= csrf_field() ?>
+          <?= bot_trap_relay() ?>
           <input type="hidden" name="service_id" value="<?= (int) $service['id'] ?>">
           <input type="hidden" name="date" value="<?= e($date) ?>">
           <input type="hidden" name="time" value="<?= e($time) ?>">
@@ -322,6 +334,7 @@ elseif ($date !== '' && $time !== ''):
 
         <form method="post" action="<?= e(url('booking/?step=review')) ?>" class="bk-form" novalidate>
           <?= csrf_field() ?>
+          <?= bot_trap_fields() ?>
           <input type="hidden" name="service_id" value="<?= (int) $service['id'] ?>">
           <input type="hidden" name="date" value="<?= e($date) ?>">
           <input type="hidden" name="time" value="<?= e($time) ?>">

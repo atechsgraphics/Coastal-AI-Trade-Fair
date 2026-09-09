@@ -14,7 +14,7 @@ declare(strict_types=1);
  */
 
 /** Bump this when new tables, columns or seed rows are added below. */
-const BOOKING_SCHEMA_VERSION = 10;
+const BOOKING_SCHEMA_VERSION = 11;
 
 function booking_schema_marker(): string
 {
@@ -305,6 +305,7 @@ SQL;
     booking_seed_settings();
     booking_seed_page();
     booking_correct_content();
+    booking_correct_content_v11();
     booking_prepare_storage();
 
     @file_put_contents(booking_schema_marker(), (string) BOOKING_SCHEMA_VERSION);
@@ -350,7 +351,11 @@ function booking_seed_page(): void
 function booking_add_columns(): array
 {
     /** @var array<string, array<string, string>> $additions table => column => definition */
-    $additions = [];
+    $additions = [
+        // Set on an account whose password was handed over rather than chosen,
+        // so the control panel makes them pick their own before going further.
+        'users' => ['must_change_password' => 'INTEGER NOT NULL DEFAULT 0'],
+    ];
 
     $added = [];
     foreach ($additions as $table => $columns) {
@@ -653,4 +658,262 @@ function booking_seed_event_structure(): void
             ]
         );
     }
+}
+
+
+/* ==========================================================================
+   THE RATE CARD, THE ADMIN ACCOUNT AND WHERE MAIL GOES (schema version 11)
+   --------------------------------------------------------------------------
+   Checked against "Coastal AI Trade Fair Registration Form 2026 Updated.pdf"
+   (Official Stall Rate Card & Proposal Booking Form, V2).
+
+   Three things came out of that comparison:
+
+     * The FNB account number on the site was 62488155152. The rate card says
+       64288155152 — the 4 and the 2 are transposed. Every exhibitor paying by
+       EFT was being given an account number that does not match the form they
+       signed, so this is corrected here.
+
+     * Four outdoor tiers and the three-phase power surcharge are on the rate
+       card and in its tick-box selection list, but were never on the site, so
+       nobody could book them.
+
+     * Bookings, enquiries and proof of payment now reach all three mailboxes
+       the team uses, the gmail one included.
+
+   As with version 10, every change is conditional: a setting is only rewritten
+   while it still holds the value we know to be stale, and rows are only added
+   when they are absent. Running this twice does nothing the second time.
+   ========================================================================== */
+
+function booking_correct_content_v11(): void
+{
+    booking_correct_bank_account();
+    booking_route_mail_everywhere();
+    booking_add_rate_card_tiers();
+    booking_seed_owner_account();
+}
+
+/**
+ * The account number people are told to pay into. Wrong digits here means the
+ * money does not arrive, so it is worth being exact about which value we are
+ * willing to replace.
+ */
+function booking_correct_bank_account(): void
+{
+    booking_setting_correct('bank_account_number', '62488155152', '64288155152');
+    booking_setting_correct('bank_branch_code', '280172', '280172');
+    booking_setting_fill('bank_account_type', 'Business Cheque Account');
+}
+
+/**
+ * The team works out of three mailboxes: the two on the event's own domain and
+ * the gmail address the rate card still points people at. Everything the site
+ * sends should reach all three.
+ */
+function booking_route_mail_everywhere(): void
+{
+    $all = 'info@coastalaitradefair.com, mary@coastalaitradefair.com, coastalaisummit@gmail.com';
+
+    booking_setting_correct(
+        'email_form_to',
+        'info@coastalaitradefair.com, mary@coastalaitradefair.com',
+        $all
+    );
+    booking_setting_correct(
+        'bk_admin_emails',
+        'info@coastalaitradefair.com, mary@coastalaitradefair.com',
+        $all
+    );
+    booking_setting_correct('payment_proof_email', 'info@coastalaitradefair.com', $all);
+}
+
+/**
+ * The outdoor rigs and the power surcharge from section C of the rate card.
+ * Each one becomes a row on the public rate list and a service people can
+ * actually book, matching how the indoor stalls already work.
+ */
+function booking_add_rate_card_tiers(): void
+{
+    $tiers = [
+        [
+            'slug'     => 'outdoor-corporate-stall-6x4',
+            'name'     => 'Outdoor Corporate Stall 6x4',
+            'category' => 'Outdoor Corporate Stall 6x4',
+            'summary'  => '6m x 4m (24 m²) — dedicated clearance, open layout, 1x 15A power hookup',
+            'price'    => 14500.00,
+        ],
+        [
+            'slug'     => 'heavy-outdoor-stall-8x5',
+            'name'     => 'Heavy Outdoor Stall 8x5',
+            'category' => 'Heavy Outdoor Stall 8x5',
+            'summary'  => '8m x 5m (40 m²) — extended drive-in length, display stage clearance, dual 15A power',
+            'price'    => 21500.00,
+        ],
+        [
+            'slug'     => 'outdoor-pavilion-6x6',
+            'name'     => 'Outdoor Pavilion 6x6',
+            'category' => 'Outdoor Pavilion 6x6',
+            'summary'  => '6m x 6m (36 m²) — high-tension anchored structure, heavy footfall walkway placement',
+            'price'    => 19500.00,
+        ],
+        [
+            'slug'     => 'mega-pavilion-10x6',
+            'name'     => 'Mega Pavilion XL 10x6',
+            'category' => 'Mega Pavilion XL 10x6',
+            'summary'  => '10m x 6m (60 m²) — multi-module high-tension, priority perimeter corner frontage',
+            'price'    => 29997.00,
+        ],
+        [
+            'slug'     => 'three-phase-power-hookup',
+            'name'     => '3-Phase Power Connection',
+            'category' => '3-Phase Power Connection',
+            'summary'  => 'Surcharge per event for heavy trailer rigs or refrigeration units',
+            'price'    => 1200.00,
+        ],
+    ];
+
+    $venue = trim((string) (db_one(
+        'SELECT value AS v FROM settings WHERE ' . db_name('key') . " = 'venue_name'"
+    )['v'] ?? ''));
+    $city = trim((string) (db_one(
+        'SELECT value AS v FROM settings WHERE ' . db_name('key') . " = 'venue_city'"
+    )['v'] ?? ''));
+    $location = trim($venue . ($city !== '' ? ', ' . $city : ''), ', ');
+
+    // Sit them after everything already on the list.
+    $lastStall = (int) (db_one('SELECT MAX(position) AS p FROM stalls')['p'] ?? 0);
+    $lastSvc   = (int) (db_one('SELECT MAX(position) AS p FROM services')['p'] ?? 0);
+
+    // Copy the booking window from a stall that already works, so the new
+    // tiers open on exactly the same day as the rest of the fair.
+    $template = db_one("SELECT * FROM services WHERE slug = 'indoor-corporate-stall'");
+
+    foreach ($tiers as $offset => $tier) {
+        if (!db_one('SELECT id FROM services WHERE slug = :s', [':s' => $tier['slug']])) {
+            db_run(
+                'INSERT INTO services
+                   (name, slug, summary, description, location, image, price, price_mode,
+                    duration_minutes, buffer_minutes, slot_capacity, capacity_unit,
+                    min_guests, max_guests, collect_guest_names, lead_time_hours,
+                    max_advance_days, payment_deadline_hours, extra_field_label,
+                    extra_field_help, extra_field_required, instructions, position,
+                    is_active, created_at, updated_at)
+                 VALUES
+                   (:name, :slug, :summary, :description, :location, :image, :price, :mode,
+                    :duration, :buffer, :capacity, :unit,
+                    :ming, :maxg, :names, :lead,
+                    :advance, :deadline, :xlabel,
+                    :xhelp, :xreq, :instructions, :position,
+                    1, :created, :updated)',
+                [
+                    ':name'        => $tier['name'],
+                    ':slug'        => $tier['slug'],
+                    ':summary'     => $tier['summary'],
+                    ':description' => $tier['summary'] . "\n\nBooked for the full event, 30 September to 3 October 2026"
+                                      . ($location !== '' ? ', at ' . $location : '') . '.',
+                    ':location'    => $location,
+                    ':image'       => '',
+                    ':price'       => $tier['price'],
+                    ':mode'        => 'booking',
+                    ':duration'    => (int) ($template['duration_minutes'] ?? 540),
+                    ':buffer'      => (int) ($template['buffer_minutes'] ?? 0),
+                    ':capacity'    => (int) ($template['slot_capacity'] ?? 10),
+                    ':unit'        => (string) ($template['capacity_unit'] ?? 'booking'),
+                    ':ming'        => (int) ($template['min_guests'] ?? 1),
+                    ':maxg'        => (int) ($template['max_guests'] ?? 1),
+                    ':names'       => (int) ($template['collect_guest_names'] ?? 0),
+                    ':lead'        => (int) ($template['lead_time_hours'] ?? 0),
+                    ':advance'     => (int) ($template['max_advance_days'] ?? 400),
+                    ':deadline'    => (int) ($template['payment_deadline_hours'] ?? 48),
+                    ':xlabel'      => (string) ($template['extra_field_label'] ?? ''),
+                    ':xhelp'       => (string) ($template['extra_field_help'] ?? ''),
+                    ':xreq'        => (int) ($template['extra_field_required'] ?? 0),
+                    ':instructions' => (string) ($template['instructions'] ?? ''),
+                    ':position'    => $lastSvc + 1 + $offset,
+                    ':created'     => date('Y-m-d H:i:s'),
+                    ':updated'     => date('Y-m-d H:i:s'),
+                ]
+            );
+
+            // Opening hours, copied from the stall the tier is modelled on.
+            $newId = (int) (db_one('SELECT id FROM services WHERE slug = :s', [':s' => $tier['slug']])['id'] ?? 0);
+            if ($newId > 0 && isset($template['id'])) {
+                foreach (db_all('SELECT * FROM service_hours WHERE service_id = :s', [':s' => (int) $template['id']]) as $hour) {
+                    db_run(
+                        'INSERT INTO service_hours (service_id, weekday, start_time, end_time, slot_interval, capacity, position, is_active)
+                         VALUES (:s, :w, :from, :to, :interval, :cap, :pos, 1)',
+                        [
+                            ':s'        => $newId,
+                            ':w'        => (int) $hour['weekday'],
+                            ':from'     => (string) $hour['start_time'],
+                            ':to'       => (string) $hour['end_time'],
+                            ':interval' => (int) $hour['slot_interval'],
+                            ':cap'      => (int) $hour['capacity'],
+                            ':pos'      => (int) $hour['position'],
+                        ]
+                    );
+                }
+            }
+        }
+
+        if (!db_one('SELECT id FROM stalls WHERE category = :c', [':c' => $tier['category']])) {
+            db_run(
+                'INSERT INTO stalls (category, details, rate, note, kind, free_with_stall, bookable, position, is_active)
+                 VALUES (:category, :details, :rate, :note, :kind, 0, 1, :position, 1)',
+                [
+                    ':category' => $tier['category'],
+                    ':details'  => $tier['summary'],
+                    ':rate'     => 'N$ ' . number_format($tier['price'], 0, '.', ','),
+                    ':note'     => '',
+                    ':kind'     => $tier['slug'] === 'three-phase-power-hookup' ? 'extra' : 'stall',
+                    ':position' => $lastStall + 1 + $offset,
+                ]
+            );
+        }
+    }
+}
+
+/**
+ * The account the event's own administrator signs in with.
+ *
+ * The starting password is NOT written here. This file is in version control
+ * and the repository is public, so a password committed alongside the address
+ * it belongs to and the address of the live site would be a gift to anyone
+ * scanning GitHub. It is read from storage/env.php instead, which is never
+ * committed and never served to the web:
+ *
+ *     'ADMIN_INITIAL_PASSWORD' => '...'
+ *
+ * With nothing there, no account is made and the migration moves on. Whatever
+ * is used is flagged for replacement the moment its owner signs in, so a
+ * password that has travelled through a message or an email cannot stay in
+ * use. Once they have chosen their own, the line can be deleted from env.php.
+ */
+function booking_seed_owner_account(): void
+{
+    $email    = 'mary@coastalaitradefair.com';
+    $username = 'mary';
+
+    if (db_one('SELECT id FROM users WHERE email = :e OR username = :u', [':e' => $email, ':u' => $username])) {
+        return;
+    }
+
+    $initial = env('ADMIN_INITIAL_PASSWORD');
+    if ($initial === '') {
+        return;
+    }
+
+    db_run(
+        'INSERT INTO users (username, name, email, password_hash, role, created_at, must_change_password)
+         VALUES (:u, :n, :e, :h, :r, :c, 1)',
+        [
+            ':u' => $username,
+            ':n' => 'Mary',
+            ':e' => $email,
+            ':h' => password_hash($initial, PASSWORD_DEFAULT),
+            ':r' => 'admin',
+            ':c' => date('Y-m-d H:i:s'),
+        ]
+    );
 }

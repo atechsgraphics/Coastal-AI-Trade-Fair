@@ -34,7 +34,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
     if (!csrf_check()) {
         $error = 'Your session expired before the form was sent. Please try again.';
-    } elseif (trim((string) ($_POST['website'] ?? '')) !== '') {
+    } elseif (bot_trap_problem(4) !== null) {
         // Honeypot: quietly pretend it worked.
         bk_flash('ok', 'Please check your email for the link that activates your account.');
         redirect('auth/login.php');
@@ -156,8 +156,9 @@ bk_hero('CLIENT ACCOUNTS', 'Create your {account.}', 'One account keeps every bo
           </label>
         </div>
 
-        <label class="hp-field" aria-hidden="true">Leave this empty
-          <input type="text" name="website" tabindex="-1" autocomplete="off">
+        <?= bot_trap_fields() ?>
+        <label class="hp-field" aria-hidden="true" hidden>Leave this empty
+          <input type="text" name="website_2" tabindex="-1" autocomplete="off">
         </label>
 
         <div class="bk-form-actions">

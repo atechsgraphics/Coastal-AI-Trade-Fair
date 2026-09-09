@@ -183,7 +183,7 @@ function booking_handle(): array
     }
 
     // Honeypot.
-    if (trim((string) ($_POST['website'] ?? '')) !== '') {
+    if (bot_trap_problem(4) !== null || bot_trap_text_problem((string) ($_POST['special_requirements'] ?? '')) !== null) {
         return ['ok', 'Thank you — your booking has been received.', null];
     }
 

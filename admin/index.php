@@ -51,6 +51,49 @@ if ($route === 'login') {
 
 $user = require_admin();
 
+/* ================================================ FIRST-RUN PASSWORD GATE */
+/* An account whose password was handed to its owner rather than chosen by
+   them is flagged in the database. Until they replace it, the control panel
+   shows one screen and nothing else — signing out is the only other way past,
+   so a password that has travelled through a message or an email cannot quietly
+   stay in use. */
+
+if (!empty($user['must_change_password'])) {
+    if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['do'] ?? '') === 'first_password') {
+        if (!csrf_check()) {
+            admin_flash('error', 'Your session expired. Please try again.');
+            redirect('admin/?p=first-password');
+        }
+
+        $current = (string) ($_POST['current'] ?? '');
+        $new     = (string) ($_POST['new'] ?? '');
+        $confirm = (string) ($_POST['confirm'] ?? '');
+        $problem = client_password_problem($new);
+
+        if (!password_verify($current, $user['password_hash'])) {
+            admin_flash('error', 'The password you signed in with is not correct.');
+        } elseif ($problem !== null) {
+            admin_flash('error', $problem);
+        } elseif ($new !== $confirm) {
+            admin_flash('error', 'The two new passwords do not match.');
+        } elseif (password_verify($new, $user['password_hash'])) {
+            admin_flash('error', 'Please choose a password you have not used here before.');
+        } else {
+            db_run(
+                'UPDATE users SET password_hash = :h, must_change_password = 0 WHERE id = :id',
+                [':h' => password_hash($new, PASSWORD_DEFAULT), ':id' => (int) $user['id']]
+            );
+            admin_log('set their own password');
+            admin_flash('ok', 'Your password has been changed. Welcome to the control panel.');
+            redirect('admin/');
+        }
+        redirect('admin/?p=first-password');
+    }
+
+    admin_first_password_view($user);
+    exit;
+}
+
 /* ========================================================= POST HANDLERS */
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
@@ -535,6 +578,67 @@ function admin_foot(): void
   </div>
 </div>
 <script src="assets/admin.js?v=<?= e(asset_version('assets/admin.js')) ?>"></script>
+</body>
+</html>
+    <?php
+}
+
+/**
+ * The one screen a flagged account sees until it has chosen its own password.
+ * Deliberately a page of its own rather than a banner: there is nothing else
+ * to click, so the step cannot be skipped past.
+ */
+function admin_first_password_view(array $user): void
+{
+    ?>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Choose your password | <?= e(setting('event_name')) ?></title>
+<link rel="icon" href="<?= e(site_image(setting('logo'), 32)) ?>">
+<link rel="stylesheet" href="<?= e(url('assets/admin.css')) ?>?v=<?= e(asset_version('assets/admin.css')) ?>">
+</head>
+<body class="a-login-body">
+<main class="a-login">
+  <img class="a-login-logo" src="<?= e(site_image(setting('logo'), 100)) ?>" alt="<?= e(setting('event_name')) ?>">
+  <h1>Choose your own password</h1>
+  <p class="a-login-intro">
+    Hello <?= e($user['name'] ?: $user['username']) ?>. The password you signed in with was
+    set up for you, so please replace it with one only you know before you carry on.
+  </p>
+
+  <?php foreach (admin_flash_take() as $note): ?>
+    <div class="a-alert a-alert-<?= $note['type'] === 'ok' ? 'ok' : 'error' ?>"><?= e($note['message']) ?></div>
+  <?php endforeach; ?>
+
+  <form method="post" action="<?= e(url('admin/?p=first-password')) ?>" autocomplete="off">
+    <?= csrf_field() ?>
+    <input type="hidden" name="do" value="first_password">
+
+    <div class="a-field">
+      <label for="fp_current">The password you just signed in with</label>
+      <input type="password" id="fp_current" name="current" autocomplete="current-password" required autofocus>
+    </div>
+    <div class="a-field">
+      <label for="fp_new">Your new password</label>
+      <input type="password" id="fp_new" name="new" autocomplete="new-password" minlength="10" required>
+      <small>At least 10 characters, with letters as well as numbers.</small>
+    </div>
+    <div class="a-field">
+      <label for="fp_confirm">Type it once more</label>
+      <input type="password" id="fp_confirm" name="confirm" autocomplete="new-password" minlength="10" required>
+    </div>
+
+    <button class="a-btn" type="submit">Save my password and continue</button>
+  </form>
+
+  <p class="a-login-foot">
+    <a href="<?= e(url('admin/?p=logout')) ?>">Sign out instead</a>
+  </p>
+</main>
 </body>
 </html>
     <?php

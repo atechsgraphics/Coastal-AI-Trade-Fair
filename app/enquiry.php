@@ -35,8 +35,13 @@ function enquiry_handle(): array
         return ['error', 'Your session expired. Please try sending the form again.'];
     }
 
-    // Honeypot: real visitors never fill this in.
-    if (trim((string) ($_POST['website'] ?? '')) !== '') {
+    // The hidden field, the timing check and a look at what was actually
+    // written. Each answers with the same thank-you a real sender gets, so a
+    // script cannot tell which of its attempts got through.
+    if (bot_trap_problem(3) !== null) {
+        return ['ok', 'Thank you — your message has been received.'];
+    }
+    if (bot_trap_text_problem((string) ($_POST['message'] ?? '')) !== null) {
         return ['ok', 'Thank you — your message has been received.'];
     }
 
@@ -194,8 +199,9 @@ function enquiry_form(string $variant = 'full', string $status = '', string $not
     <textarea name="message" rows="<?= $variant === 'full' ? 6 : 4 ?>" required maxlength="4000"></textarea>
   </label>
 
-  <label class="hp-field" aria-hidden="true">Leave this field empty
-    <input type="text" name="website" tabindex="-1" autocomplete="off">
+  <?= bot_trap_fields() ?>
+  <label class="hp-field" aria-hidden="true" hidden>Leave this field empty
+    <input type="text" name="website_2" tabindex="-1" autocomplete="off">
   </label>
 
   <button class="btn btn-primary" type="submit">Send enquiry <span aria-hidden="true">→</span></button>

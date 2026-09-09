@@ -664,3 +664,141 @@ function bk_token_equals(?string $known, $given): bool
     }
     return hash_equals($known, $given);
 }
+
+/* ======================================================= 8. THE BOT TRAP */
+
+/**
+ * A secret of the site's own, made once and kept in settings. Used to sign the
+ * timestamp below so a bot cannot simply post an older one.
+ */
+function bot_trap_secret(): string
+{
+    static $secret = null;
+    if ($secret !== null) {
+        return $secret;
+    }
+
+    $row = db_one('SELECT value AS v FROM settings WHERE ' . db_name('key') . ' = :k', [':k' => 'form_secret']);
+    $secret = trim((string) ($row['v'] ?? ''));
+    if ($secret === '') {
+        $secret = bin2hex(random_bytes(32));
+        db_setting_put_missing('form_secret', $secret);
+        $row = db_one('SELECT value AS v FROM settings WHERE ' . db_name('key') . ' = :k', [':k' => 'form_secret']);
+        $secret = trim((string) ($row['v'] ?? $secret));
+    }
+    return $secret;
+}
+
+/**
+ * Two checks that cost a real visitor nothing and are awkward for a script:
+ * a field that is hidden from people but irresistible to form-fillers, and a
+ * signed note of when the page was drawn. Both go inside every public form,
+ * alongside the CSRF token that is already there.
+ */
+function bot_trap_fields(): string
+{
+    $stamp = (string) time();
+    $sig   = hash_hmac('sha256', $stamp, bot_trap_secret());
+
+    return '<label class="hp-field" aria-hidden="true">Leave this field empty'
+        . '<input type="text" name="website" tabindex="-1" autocomplete="off"></label>'
+        . '<input type="hidden" name="form_started" value="' . e($stamp) . '">'
+        . '<input type="hidden" name="form_started_sig" value="' . e($sig) . '">';
+}
+
+/**
+ * Returns a reason to reject the submission, or null to let it through.
+ *
+ * The timing test is deliberately gentle. Nobody reads a booking form, types
+ * their company name and their phone number and submits inside three seconds,
+ * but somebody pasting into a short contact box might be quick, so the caller
+ * chooses the threshold. A submission with no timestamp at all is treated as
+ * suspicious rather than fatal: the form may have been cached before this went
+ * live, so it only fails once the field exists and does not verify.
+ */
+function bot_trap_problem(int $minSeconds = 3, int $maxSeconds = 43200): ?string
+{
+    // The invisible field. A person never sees it, so never fills it.
+    if (trim((string) ($_POST['website'] ?? '')) !== '') {
+        return 'honeypot';
+    }
+
+    $stamp = (string) ($_POST['form_started'] ?? '');
+    $sig   = (string) ($_POST['form_started_sig'] ?? '');
+    if ($stamp === '' && $sig === '') {
+        return null;                                    // an older cached form
+    }
+
+    if (!ctype_digit($stamp) || !hash_equals(hash_hmac('sha256', $stamp, bot_trap_secret()), $sig)) {
+        return 'tampered';
+    }
+
+    $age = time() - (int) $stamp;
+    if ($age < $minSeconds) {
+        return 'too fast';
+    }
+    if ($age > $maxSeconds) {
+        return 'expired';
+    }
+
+    return null;
+}
+
+/**
+ * Free text that reads like an advertisement rather than a message. Spam sent
+ * through a contact form is nearly always several links and a wall of writing;
+ * a genuine enquiry about a stall is neither.
+ */
+function bot_trap_text_problem(string $text): ?string
+{
+    $links = preg_match_all('#\bhttps?://|\bwww\.|\[url|\[link#i', $text);
+    if ($links >= 3) {
+        return 'links';
+    }
+    if (preg_match('#<a\s|</a>|\[/?url\]#i', $text)) {
+        return 'markup';
+    }
+    // Cyrillic and CJK runs in an otherwise English form: not our audience.
+    if (preg_match('/[\x{0400}-\x{04FF}\x{4E00}-\x{9FFF}]{6,}/u', $text)) {
+        return 'script';
+    }
+    return null;
+}
+
+/**
+ * Note a blocked submission in the activity log. Worth keeping: if genuine
+ * bookings ever stop arriving, this is the first place to look, and it shows
+ * the team the traps are doing something rather than nothing.
+ */
+function bot_trap_log(string $where, string $reason): void
+{
+    db_run(
+        'INSERT INTO activity_log (user_name, action, detail, created_at) VALUES (?, ?, ?, ?)',
+        ['system', 'blocked a suspected bot', mb_substr($where . ' — ' . $reason . ' — ' . client_ip(), 0, 300), date('Y-m-d H:i:s')]
+    );
+}
+
+/**
+ * Carry the original timestamp through a multi-step form.
+ *
+ * The booking runs details -> review -> confirm. If the confirm step minted a
+ * fresh stamp, the only thing measured would be how long somebody looked at
+ * the review screen, and a person who has already read it and clicks straight
+ * through would be treated as a bot. Re-emitting what came in means the check
+ * covers the whole journey, which is what we actually care about.
+ */
+function bot_trap_relay(): string
+{
+    $stamp = (string) ($_POST['form_started'] ?? '');
+    $sig   = (string) ($_POST['form_started_sig'] ?? '');
+
+    if ($stamp !== '' && ctype_digit($stamp)
+        && hash_equals(hash_hmac('sha256', $stamp, bot_trap_secret()), $sig)) {
+        return '<label class="hp-field" aria-hidden="true">Leave this field empty'
+            . '<input type="text" name="website" tabindex="-1" autocomplete="off"></label>'
+            . '<input type="hidden" name="form_started" value="' . e($stamp) . '">'
+            . '<input type="hidden" name="form_started_sig" value="' . e($sig) . '">';
+    }
+
+    return bot_trap_fields();
+}
