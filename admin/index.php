@@ -1260,9 +1260,14 @@ function admin_enquiries_view(): void
     $filter = (string) ($_GET['s'] ?? '');
     $sql = 'SELECT * FROM enquiries';
     $params = [];
-    if (in_array($filter, ['new', 'read', 'replied', 'archived'], true)) {
+    if (in_array($filter, ['new', 'read', 'replied', 'archived', 'spam'], true)) {
         $sql .= ' WHERE status = :s';
         $params[':s'] = $filter;
+    } else {
+        // "All" means all the real messages. Held-back sales pitches have a
+        // tab of their own, the way they would in any mail program — there if
+        // you want them, out of the way if you do not.
+        $sql .= " WHERE status <> 'spam'";
     }
     $sql .= ' ORDER BY created_at DESC LIMIT 400';
     $rows = db_all($sql, $params);
@@ -1277,7 +1282,7 @@ function admin_enquiries_view(): void
 
 <div class="a-tabs">
   <a href="?p=enquiries"<?= $filter === '' ? ' class="on"' : '' ?>>All</a>
-  <?php foreach (['new' => 'New', 'read' => 'Read', 'replied' => 'Replied', 'archived' => 'Archived'] as $key => $label): ?>
+  <?php foreach (['new' => 'New', 'read' => 'Read', 'replied' => 'Replied', 'archived' => 'Archived', 'spam' => 'Spam'] as $key => $label): ?>
     <a href="?p=enquiries&amp;s=<?= e($key) ?>"<?= $filter === $key ? ' class="on"' : '' ?>><?= e($label) ?></a>
   <?php endforeach; ?>
 </div>
@@ -1312,7 +1317,7 @@ function admin_enquiries_view(): void
           <input type="hidden" name="do" value="enquiry_status">
           <input type="hidden" name="id" value="<?= (int) $row['id'] ?>">
           <select name="status" onchange="this.form.submit()" aria-label="Change status">
-            <?php foreach (['new' => 'New', 'read' => 'Read', 'replied' => 'Replied', 'archived' => 'Archived'] as $key => $label): ?>
+            <?php foreach (['new' => 'New', 'read' => 'Read', 'replied' => 'Replied', 'archived' => 'Archived', 'spam' => 'Spam'] as $key => $label): ?>
               <option value="<?= e($key) ?>"<?= $row['status'] === $key ? ' selected' : '' ?>><?= e($label) ?></option>
             <?php endforeach; ?>
           </select>

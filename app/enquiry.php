@@ -73,6 +73,13 @@ function enquiry_handle(): array
         return ['error', 'Your message is a little too long. Please keep it under 4000 characters.'];
     }
 
+    // An unsolicited pitch is filed as spam rather than thrown away: a wrong
+    // guess would lose a real exhibitor, and the team can look through the
+    // Spam tab whenever they like. What it does not do is reach anybody's
+    // inbox, which is the whole point.
+    $spamScore = enquiry_spam_score($name, $company, $email, $message);
+    $isSpam    = $spamScore >= ENQUIRY_SPAM_THRESHOLD;
+
     db_run(
         'INSERT INTO enquiries (name, company, email, phone, interest, option_key, message, status, ip, created_at)
          VALUES (:name, :company, :email, :phone, :interest, :option, :message, :status, :ip, :created)',
@@ -84,11 +91,20 @@ function enquiry_handle(): array
             ':interest' => mb_substr($interest, 0, 120),
             ':option'   => mb_substr($option, 0, 160),
             ':message'  => $message,
-            ':status'   => 'new',
+            ':status'   => $isSpam ? 'spam' : 'new',
             ':ip'       => client_ip(),
             ':created'  => date('Y-m-d H:i:s'),
         ]
     );
+
+    if ($isSpam) {
+        if (function_exists('bot_trap_log')) {
+            bot_trap_log('contact form', 'sales pitch, score ' . $spamScore);
+        }
+        // The same thank-you a real sender gets. Somebody testing which
+        // wording gets through should learn nothing from the reply.
+        return ['ok', 'Thank you, ' . $name . '. Your enquiry has reached the event team — we will be in touch shortly.'];
+    }
 
     enquiry_notify($name, $company, $email, $phone, $interest, $option, $message);
 
@@ -230,4 +246,82 @@ function enquiry_form(string $variant = 'full', string $status = '', string $not
   <p class="field-hint">We reply from <?= e(setting('email_primary')) ?>. Your details are only used to answer your enquiry.</p>
 </form>
     <?php
+}
+
+/* ==================================================== UNSOLICITED PITCHES */
+
+/**
+ * Score an enquiry for being a cold sales pitch rather than a real enquiry.
+ *
+ * The traps already in place — a hidden field, a signed timestamp, a link
+ * count — catch scripts. They do not catch this: a person, or a careful bot,
+ * filling the form slowly and writing a polite paragraph with no links in it
+ * offering SEO work. That is the mail the team actually complained about.
+ *
+ * So this reads what was written. It is deliberately a score rather than a
+ * keyword list: an exhibitor selling marketing services is a real customer and
+ * may well write "digital marketing" or "web design" in a genuine enquiry.
+ * One phrase means nothing. Three or four of them, in the shape these pitches
+ * always take, is not a coincidence.
+ *
+ * Returns the score. Anything from ENQUIRY_SPAM_THRESHOLD up is held back.
+ */
+
+const ENQUIRY_SPAM_THRESHOLD = 5;
+
+function enquiry_spam_score(string $name, string $company, string $email, string $message): int
+{
+    $haystack = mb_strtolower($name . ' ' . $company . ' ' . $message);
+    $score = 0;
+
+    /* What they are selling. These are the giveaway: nobody enquiring about a
+       stall at a trade fair offers to improve the fair's search ranking. */
+    $offers = [
+        'google ranking', 'google rankings', 'search ranking', 'search engine optimi',
+        'seo strategy', 'seo services', 'seo audit', 'seo proposal', 'off-page seo',
+        'on-page seo', 'backlink', 'link building', 'domain authority',
+        'website redesign', 'redesign your website', 'web design services',
+        'mobile app development', 'app development services',
+        'lead generation service', 'quality leads', 'higher-quality leads',
+        'organic growth', 'organic traffic', 'increase your traffic',
+        'social media management', 'guest post', 'guest posting',
+    ];
+    foreach ($offers as $phrase) {
+        if (str_contains($haystack, $phrase)) { $score += 3; }
+    }
+
+    /* How the pitch always opens. */
+    $openings = [
+        'looking over your website', 'came across your website', 'visited your website',
+        'i was browsing your', 'checked your website', 'reviewing your website',
+        'noticed a few', 'noticed some issues', 'noticed that your website',
+        'i hope this email finds you', 'hope you are doing well',
+    ];
+    foreach ($openings as $phrase) {
+        if (str_contains($haystack, $phrase)) { $score += 2; }
+    }
+
+    /* How it always closes. */
+    $closings = [
+        'would you be open to', 'would you be interested in receiving',
+        'pricing proposal', 'price list and portfolio', 'no obligation',
+        'free audit', 'free analysis', 'free consultation', 'free quote',
+        'let me know if you would like me to send', 'send you a proposal',
+        'schedule a call', 'book a quick call', 'if this is not relevant',
+        'reply with unsubscribe', 'reply stop',
+    ];
+    foreach ($closings as $phrase) {
+        if (str_contains($haystack, $phrase)) { $score += 2; }
+    }
+
+    /* A pitch is an essay; a stall enquiry is a few lines. Length alone proves
+       nothing, so it only counts once something else has already matched. */
+    if ($score > 0 && mb_strlen($message) > 600) { $score += 1; }
+
+    /* Written to nobody in particular. */
+    foreach (['dear sir/madam', 'dear sir or madam', 'to whom it may concern', 'dear owner', 'hello there,'] as $phrase) {
+        if (str_contains($haystack, $phrase)) { $score += 1; }
+    }
+
+    return $score;
 }
