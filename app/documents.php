@@ -283,79 +283,129 @@ function bk_ticket_issue(array $booking, bool $rebuild = false): ?array
     return $ticket;
 }
 
-/** The ticket document. */
+/**
+ * The ticket a client gets once their payment is approved.
+ *
+ * Laid out like a real event ticket rather than a form: a photographic banner
+ * across the top carrying the event name, the details beneath it in two
+ * columns, and a tear-off stub down the right with the QR code and the
+ * verification code on it.
+ *
+ * Everything is tables and absolute positioning because dompdf has no flexbox
+ * and no grid. The banner is a background image on a fixed-height block, which
+ * dompdf does render, with a dark panel over the lower half so the white
+ * lettering holds against whatever the photograph is doing behind it.
+ */
 function bk_ticket_html(array $booking, array $ticket): string
 {
-    $logo = bk_logo_data_uri();
-    $qr = qr_png_data_uri(bk_ticket_verify_url($ticket), 4, 2);
+    $logo   = bk_logo_data_uri();
+    $qr     = qr_png_data_uri(bk_ticket_verify_url($ticket), 4, 2);
     $accent = setting('theme_accent', '#22c9f0');
-    $ink = setting('theme_ink', '#04121f');
+    $ink    = setting('theme_ink', '#04121f');
+    $banner = bk_image_darkened(setting('ticket_banner_image', 'images/generated/namibia-ai-hero-3d.png'), 900);
 
-    $guests = (int) $booking['guests'];
+    $guests   = (int) $booking['guests'];
     $location = trim((string) $booking['location']) !== ''
         ? (string) $booking['location']
         : trim(setting('venue_name') . ', ' . setting('venue_city'), ', ');
 
-    $rows = [
-        ['Client', (string) $booking['contact_name']],
-        ['Booking reference', (string) $booking['reference']],
-        ['Ticket number', (string) $ticket['ticket_number']],
-        ['Service', (string) $booking['service_name']],
-        ['Date', bk_date_long((string) $booking['booking_date'])],
-        ['Time', bk_time_range((string) $booking['start_time'], (string) $booking['end_time'])],
-        ['Guests / participants', $guests > 0 ? (string) $guests : '1'],
-        ['Location', $location],
-        ['Booking status', bk_status_label((string) $booking['status'])],
-        ['EFT payment status', bk_payment_label($booking)],
-        ['Amount paid', bk_money((float) $booking['amount_paid'], (string) $booking['currency'])],
-        ['Payment reference', (string) $booking['reference']],
-        ['Verification code', (string) $ticket['verification_code']],
-        ['Issue date', date('d F Y', strtotime((string) $ticket['issued_at']) ?: time())],
+    /* The six facts somebody actually needs at the door, big enough to read
+       from a phone screen held up to a scanner. */
+    $headline = [
+        ['TICKET HOLDER', (string) $booking['contact_name']],
+        ['DATE',          bk_date_long((string) $booking['booking_date'])],
+        ['ADMITS',        $guests > 0 ? $guests . ($guests === 1 ? ' person' : ' people') : '1 person'],
+        ['TIME',          bk_time_range((string) $booking['start_time'], (string) $booking['end_time'])],
+        ['VENUE',         $location],
+        ['AMOUNT PAID',   bk_money((float) $booking['amount_paid'], (string) $booking['currency'])],
     ];
 
-    if ((string) $booking['company'] !== '') {
-        array_splice($rows, 1, 0, [['Company', (string) $booking['company']]]);
+    $cells = '';
+    foreach (array_chunk($headline, 2) as $pair) {
+        $cells .= '<tr>';
+        foreach ($pair as [$label, $value]) {
+            $cells .= '<td class="tk-cell"><span class="tk-label">' . e($label) . '</span>'
+                . '<strong class="tk-value">' . e((string) $value) . '</strong></td>';
+        }
+        $cells .= '</tr>';
     }
 
-    $body = '';
-    foreach ($rows as [$label, $value]) {
-        $body .= '<tr><th>' . e($label) . '</th><td>' . e((string) $value) . '</td></tr>';
+    /* The rest goes underneath in the smaller print. */
+    $small = [
+        ['Booking reference', (string) $booking['reference']],
+        ['Ticket number',     (string) $ticket['ticket_number']],
+        ['Booking status',    bk_status_label((string) $booking['status'])],
+        ['Payment',           bk_payment_label($booking)],
+        ['Issued',            date('d F Y', strtotime((string) $ticket['issued_at']) ?: time())],
+    ];
+    if ((string) $booking['company'] !== '') {
+        array_unshift($small, ['Company', (string) $booking['company']]);
+    }
+
+    $smallRows = '';
+    foreach (array_chunk($small, 2) as $pair) {
+        $smallRows .= '<tr>';
+        foreach ($pair as [$label, $value]) {
+            $smallRows .= '<th>' . e($label) . '</th><td>' . e((string) $value) . '</td>';
+        }
+        if (count($pair) === 1) {
+            $smallRows .= '<th></th><td></td>';
+        }
+        $smallRows .= '</tr>';
     }
 
     $instructions = trim(bk('bk_ticket_instructions'));
-    $serviceNote = '';
+    $serviceNote  = '';
     $service = bk_service_row_for_booking($booking);
     if ($service && trim((string) $service['instructions']) !== '') {
         $serviceNote = (string) $service['instructions'];
     }
 
+    $bannerStyle = $banner !== ''
+        ? 'background-image: url(' . $banner . '); background-size: cover; background-position: 50% 42%;'
+        : 'background-color: ' . e($ink) . ';';
+
+    $content = '
+<div class="tk">
+
+  <table class="tk-banner" style="' . $bannerStyle . '">
+    <tr><td class="tk-banner-cell">
+      <div class="tk-kicker">ADMIT ' . ($guests > 1 ? e((string) $guests) : 'ONE') . '</div>
+      <div class="tk-event">' . e(setting('event_name')) . '</div>
+      <div class="tk-service">' . e((string) $booking['service_name']) . '</div>
+    </td></tr>
+  </table>
+
+  <table class="tk-body">
+    <tr>
+      <td class="tk-main">
+        <table class="tk-facts">' . $cells . '</table>
+      </td>
+      <td class="tk-stub">'
+        . ($logo !== '' ? '<img class="tk-stub-logo" src="' . $logo . '" alt="">' : '')
+        . ($qr !== '' ? '<img class="tk-qr" src="' . $qr . '" alt="">' : '')
+        . '<div class="tk-code-label">VERIFICATION CODE</div>
+           <div class="tk-code">' . e((string) $ticket['verification_code']) . '</div>
+           <div class="tk-stub-id">' . e((string) $ticket['ticket_number']) . '</div>
+      </td>
+    </tr>
+  </table>
+
+  <table class="tk-small">' . $smallRows . '</table>
+
+  <div class="tk-verify">Check this ticket at ' . e(bk_url('booking/verify-ticket.php')) . '</div>
+</div>'
+
+    . ($instructions !== '' ? '<div class="note"><strong>Important</strong><p>' . nl2br(e($instructions)) . '</p></div>' : '')
+    . ($serviceNote !== '' ? '<div class="note note-plain"><strong>About this booking</strong><p>' . nl2br(e($serviceNote)) . '</p></div>' : '');
+
     return bk_document_shell(
         'Booking ticket ' . (string) $ticket['ticket_number'],
-        '<div class="doc-title">
-            <div class="doc-kicker">DIGITAL BOOKING TICKET</div>
-            <h1>' . e((string) $booking['service_name']) . '</h1>
-            <p class="doc-sub">' . e(bk_date_long((string) $booking['booking_date'])) . ' &middot; '
-                . e(bk_time_range((string) $booking['start_time'], (string) $booking['end_time'])) . '</p>
-         </div>
-
-         <table class="stub">
-           <tr>
-             <td class="stub-main"><table class="facts">' . $body . '</table></td>
-             <td class="stub-side">'
-                . ($qr !== '' ? '<img class="qr" src="' . $qr . '" alt="">' : '')
-                . '<div class="code-label">VERIFICATION CODE</div>
-                   <div class="code">' . e((string) $ticket['verification_code']) . '</div>
-                   <div class="code-note">Scan or enter this code at<br>' . e(bk_url('booking/verify-ticket.php')) . '</div>
-             </td>
-           </tr>
-         </table>'
-
-         . ($instructions !== '' ? '<div class="note"><strong>Important</strong><p>' . nl2br(e($instructions)) . '</p></div>' : '')
-         . ($serviceNote !== '' ? '<div class="note note-plain"><strong>About this booking</strong><p>' . nl2br(e($serviceNote)) . '</p></div>' : ''),
+        $content,
         $logo,
         $accent,
         $ink,
-        'Ticket ' . (string) $ticket['ticket_number'] . ' · Booking ' . (string) $booking['reference']
+        'This ticket is valid only for the booking shown. ' . e(setting('event_name'))
     );
 }
 
@@ -524,7 +574,7 @@ function bk_document_shell(string $title, string $content, string $logo, string 
 
     return '<!doctype html><html><head><meta charset="utf-8"><title>' . e($title) . '</title><style>
 @page { margin: 34px 38px 54px; }
-body { font-family: "DejaVu Sans", sans-serif; font-size: 10px; color: #12212e; margin: 0; }
+body { font-family: "DejaVu Sans", sans-serif; font-size: 10px; color: #12212e; margin: 0; background-color: #ffffff; }
 .head { width: 100%; border-bottom: 2.5px solid ' . e($accent) . '; padding-bottom: 12px; }
 .head td { vertical-align: top; }
 .head .logo { width: 92px; }
@@ -568,6 +618,57 @@ body { font-family: "DejaVu Sans", sans-serif; font-size: 10px; color: #12212e; 
 .note strong { font-size: 9px; letter-spacing: .8px; color: ' . e($ink) . '; }
 .note p { margin: 4px 0 0; font-size: 9.5px; color: #4a5a67; line-height: 1.55; }
 
+/* ---------------------------------------------------------- the ticket */
+/* dompdf has no flexbox and no grid, so this is tables and one absolutely
+   positioned wash. Widths are percentages of the printable area. */
+.tk { border: 1px solid #d7dee4; border-radius: 10px; margin-top: 18px; }
+
+/* The shading that keeps the white lettering readable is baked into the
+   picture by bk_image_darkened(), because dompdf cannot lay a translucent
+   panel over a background image the way a browser can. */
+.tk-banner { width: 100%; border-collapse: collapse; border-radius: 9px 9px 0 0; }
+.tk-banner-cell { height: 118px; vertical-align: bottom; padding: 0 18px 15px !important; }
+.tk-kicker {
+  font-size: 7.5px; letter-spacing: 2.4px; font-weight: bold;
+  color: ' . e($accent) . '; margin-bottom: 4px;
+}
+.tk-event { font-size: 19px; font-weight: bold; color: #ffffff; line-height: 1.15; }
+.tk-service { font-size: 10.5px; color: #e4edf3; margin-top: 3px; }
+
+.tk-body { width: 100%; border-collapse: collapse; }
+.tk-body td { vertical-align: top; padding: 0; }
+.tk-main { width: 68%; padding: 14px 16px 6px !important; }
+/* The tear-off stub. The dashed edge stands in for a perforation. */
+.tk-stub {
+  width: 32%; text-align: center;
+  border-left: 2px dashed #c9d3da;
+  background-color: #f7fafb;
+  padding: 14px 10px 12px !important;
+}
+.tk-stub-logo { display: block; width: 44px; margin: 0 auto 7px; }
+.tk-qr { display: block; width: 104px; height: 104px; margin: 0 auto; }
+.tk-code-label { font-size: 6.5px; letter-spacing: 1.4px; color: #7b8894; margin-top: 7px; }
+.tk-code { font-size: 14px; font-weight: bold; letter-spacing: 1.6px; color: ' . e($ink) . '; margin: 2px 0 5px; }
+.tk-stub-id { font-size: 7.5px; letter-spacing: 1px; color: #8b97a2; }
+
+.tk-facts { width: 100%; border-collapse: collapse; }
+.tk-cell { width: 50%; padding: 0 14px 13px 0 !important; }
+.tk-label { display: block; font-size: 6.8px; letter-spacing: 1.5px; color: #8b97a2; margin-bottom: 3px; }
+.tk-value { display: block; font-size: 12px; font-weight: bold; color: #12212e; line-height: 1.3; }
+
+.tk-small { width: 100%; border-collapse: collapse; border-top: 1px solid #e5eaee; }
+.tk-small th {
+  text-align: left; font-weight: normal; color: #7b8894;
+  font-size: 8px; padding: 6px 8px 6px 16px; width: 17%;
+}
+.tk-small td { font-size: 9px; font-weight: bold; color: #12212e; padding: 6px 14px 6px 0; width: 33%; }
+
+.tk-verify {
+  border-top: 1px solid #e5eaee; padding: 7px 16px;
+  font-size: 8px; color: #8b97a2; text-align: center;
+  border-radius: 0 0 9px 9px; background-color: #fbfcfd;
+}
+
 .foot { position: fixed; bottom: -34px; left: 0; right: 0; border-top: 1px solid #e5eaee; padding-top: 6px; font-size: 7.5px; color: #8b97a2; }
 .foot td { font-size: 7.5px; color: #8b97a2; }
 </style></head><body>
@@ -598,4 +699,131 @@ function bk_service_row_for_booking(array $booking): ?array
 {
     $id = (int) $booking['service_id'];
     return $id > 0 ? db_one('SELECT * FROM services WHERE id = :id', [':id' => $id]) : null;
+}
+
+/**
+ * Embed one of the site's own images in a PDF as a data URI.
+ *
+ * Always through a resized copy. The artwork on this site is 1.7 MB and more
+ * apiece; dropping an original into a ticket once pushed the file to 1.6 MB,
+ * which is a slow download and an awkward email attachment. A ticket banner is
+ * never rendered wider than about 520pt, so 900px is plenty.
+ */
+function bk_image_data_uri(string $relative, int $maxWidth = 900): string
+{
+    static $cache = [];
+    $relative = ltrim(trim($relative), '/');
+    $key = $relative . '|' . $maxWidth;
+    if (array_key_exists($key, $cache)) {
+        return $cache[$key];
+    }
+    $cache[$key] = '';
+
+    if ($relative === '' || preg_match('#^(https?:)?//#i', $relative)) {
+        return $cache[$key];
+    }
+
+    $root = realpath(ROOT_PATH);
+    $real = realpath(ROOT_PATH . '/' . $relative);
+    if ($root === false || $real === false || !str_starts_with($real, $root) || !is_file($real)) {
+        return $cache[$key];
+    }
+
+    // Reuse the site's own resize cache, so this costs nothing after the
+    // first ticket and the file is already a sensible size.
+    if (function_exists('image_resized')) {
+        $small = image_resized($relative, $maxWidth);
+        if ($small !== null) {
+            $smallReal = realpath(ROOT_PATH . '/' . $small);
+            if ($smallReal !== false && is_file($smallReal)) {
+                $real = $smallReal;
+            }
+        }
+    }
+
+    if (filesize($real) > 6 * 1024 * 1024) {
+        return $cache[$key];
+    }
+    $info = @getimagesize($real);
+    if ($info === false || !isset($info['mime'])) {
+        return $cache[$key];
+    }
+
+    $cache[$key] = 'data:' . $info['mime'] . ';base64,' . base64_encode((string) file_get_contents($real));
+    return $cache[$key];
+}
+
+/**
+ * A darkened copy of an image, cached, for printing white text over.
+ *
+ * dompdf cannot stack a translucent panel on top of a background image the way
+ * a browser can, so the shading is baked into the picture instead. The result
+ * is cached next to the site's other resized images, so this costs one pass
+ * the first time a ticket is made and nothing afterwards.
+ */
+function bk_image_darkened(string $relative, int $maxWidth = 900, float $strength = 0.52): string
+{
+    $relative = ltrim(trim($relative), '/');
+    if ($relative === '' || !function_exists('imagecreatetruecolor')) {
+        return bk_image_data_uri($relative, $maxWidth);
+    }
+
+    $root = realpath(ROOT_PATH);
+    $source = realpath(ROOT_PATH . '/' . $relative);
+    if ($root === false || $source === false || !str_starts_with($source, $root) || !is_file($source)) {
+        return '';
+    }
+
+    $cacheDir = UPLOAD_PATH . '/cache';
+    $name = 'tkbanner-' . substr(hash('sha256', $relative . '|' . (string) @filemtime($source) . '|' . $maxWidth . '|' . $strength), 0, 20) . '.jpg';
+    $target = $cacheDir . '/' . $name;
+
+    if (!is_file($target)) {
+        if (!is_dir($cacheDir) && !@mkdir($cacheDir, 0775, true) && !is_dir($cacheDir)) {
+            return bk_image_data_uri($relative, $maxWidth);
+        }
+        $info = @getimagesize($source);
+        if ($info === false) {
+            return bk_image_data_uri($relative, $maxWidth);
+        }
+        $image = match ((int) $info[2]) {
+            IMAGETYPE_PNG  => @imagecreatefrompng($source),
+            IMAGETYPE_JPEG => @imagecreatefromjpeg($source),
+            IMAGETYPE_WEBP => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($source) : false,
+            default        => false,
+        };
+        if (!$image) {
+            return bk_image_data_uri($relative, $maxWidth);
+        }
+
+        $w = imagesx($image);
+        $h = imagesy($image);
+        $tw = min($maxWidth, $w);
+        $th = max(1, (int) round($h * ($tw / $w)));
+
+        $out = imagecreatetruecolor($tw, $th);
+        imagefill($out, 0, 0, (int) imagecolorallocate($out, 0, 0, 0));
+        imagecopyresampled($out, $image, 0, 0, 0, 0, $tw, $th, $w, $h);
+        imagedestroy($image);
+
+        // A flat wash over the whole frame, heavier towards the bottom where
+        // the lettering sits.
+        for ($y = 0; $y < $th; $y++) {
+            $depth = $strength + (1 - $strength) * 0.42 * ($y / max(1, $th - 1));
+            $alpha = (int) round(127 * (1 - min(0.92, $depth)));
+            $shade = imagecolorallocatealpha($out, 4, 18, 31, $alpha);
+            if ($shade !== false) {
+                imagefilledrectangle($out, 0, $y, $tw - 1, $y, $shade);
+            }
+        }
+
+        imagejpeg($out, $target, 84);
+        imagedestroy($out);
+        @chmod($target, 0644);
+    }
+
+    if (!is_file($target)) {
+        return bk_image_data_uri($relative, $maxWidth);
+    }
+    return 'data:image/jpeg;base64,' . base64_encode((string) file_get_contents($target));
 }

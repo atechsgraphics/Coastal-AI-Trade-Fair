@@ -736,22 +736,47 @@ function bk_approve_payment(array $booking, array $input, array $staff): array
     $booking = bk_booking((int) $booking['id']) ?? $booking;
 
     $payment = bk_payment_for((int) $booking['id']) ?? $payment;
-    $ticket  = bk_ticket_issue($booking, true);
-    $receipt = bk_receipt_issue($booking, $payment, true);
 
+    /* Whether approving a payment also produces the paperwork, and whether the
+       client is sent it, are both the team's choice. Some events prefer to
+       check the ticket over before it goes out; some want it gone the moment
+       the money is verified. Either way the booking is confirmed here — that
+       part is not optional. */
+    $autoIssue = bk_bool('bk_ticket_auto_issue', true);
+    $autoEmail = bk_bool('bk_ticket_auto_email', true);
+
+    $ticket   = null;
+    $receipt  = null;
     $warnings = [];
-    if (!$ticket || (string) $ticket['file_name'] === '') {
-        $warnings[] = 'the ticket PDF could not be produced';
-    }
-    if (!$receipt || (string) $receipt['file_name'] === '') {
-        $warnings[] = 'the receipt PDF could not be produced';
+
+    if ($autoIssue) {
+        $ticket  = bk_ticket_issue($booking, true);
+        $receipt = bk_receipt_issue($booking, $payment, true);
+
+        if (!$ticket || (string) $ticket['file_name'] === '') {
+            $warnings[] = 'the ticket PDF could not be produced';
+        }
+        if (!$receipt || (string) $receipt['file_name'] === '') {
+            $warnings[] = 'the receipt PDF could not be produced';
+        }
     }
 
-    $sent = bk_notify_payment_approved($booking, $payment, $ticket, $receipt);
+    $sent = bk_notify_payment_approved(
+        $booking,
+        $payment,
+        $autoEmail ? $ticket : null,
+        $autoEmail ? $receipt : null
+    );
     bk_notify_admin_decision($booking, 'approved', $notes);
 
     $message = 'Payment approved. Booking ' . $booking['reference'] . ' is confirmed';
-    $message .= $sent ? ' and the client has been emailed their ticket and receipt.' : '.';
+    if ($autoIssue && $autoEmail) {
+        $message .= $sent ? ' and the client has been emailed their ticket and receipt.' : '.';
+    } elseif ($autoIssue) {
+        $message .= '. The ticket and receipt are ready — send them when you are.';
+    } else {
+        $message .= '. Issue the ticket from this screen when you are ready.';
+    }
     if (!$sent) {
         $message .= ' The confirmation email could not be sent — check Email log.';
     }

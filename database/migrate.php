@@ -14,7 +14,7 @@ declare(strict_types=1);
  */
 
 /** Bump this when new tables, columns or seed rows are added below. */
-const BOOKING_SCHEMA_VERSION = 11;
+const BOOKING_SCHEMA_VERSION = 12;
 
 function booking_schema_marker(): string
 {
@@ -433,6 +433,9 @@ images/generated/namibia-ai-coast-3d-v2.png",
         'bk_cancel_policy'          => 'Cancellations requested more than 48 hours before the booking date are reviewed by our team. Refunds follow the terms you accepted when booking.',
         'bk_terms'                  => "Bookings are held until the payment deadline shown on your booking and released afterwards.\nProof of payment must show the booking reference.\nYour ticket must be presented at the venue, printed or on your phone.",
         'bk_ticket_instructions'    => 'Bring this ticket with you, printed or on your phone. Please arrive 15 minutes before your start time. This ticket is valid only for the date, time and guest count shown.',
+        'bk_ticket_auto_issue' => '1',
+        'bk_ticket_auto_email' => '1',
+        'ticket_banner_image'  => 'images/generated/namibia-ai-hero-3d.png',
 
         /* Email */
         'bk_from_name'              => '',
