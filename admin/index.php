@@ -493,7 +493,7 @@ function admin_head(string $route): void
 <meta name="robots" content="noindex, nofollow">
 <title>Control panel · <?= e(setting('site_name')) ?></title>
 <link rel="icon" href="<?= e(site_image(setting('logo'), 32)) ?>">
-<link rel="stylesheet" href="assets/admin.css?v=<?= e(asset_version('assets/admin.css')) ?>">
+<link rel="stylesheet" href="<?= e(url('assets/admin.css')) ?>?v=<?= e(asset_version('assets/admin.css')) ?>">
 </head>
 <body>
 <div class="a-shell">
@@ -577,7 +577,7 @@ function admin_foot(): void
     </div>
   </div>
 </div>
-<script src="assets/admin.js?v=<?= e(asset_version('assets/admin.js')) ?>"></script>
+<script src="<?= e(url('assets/admin.js')) ?>?v=<?= e(asset_version('assets/admin.js')) ?>"></script>
 </body>
 </html>
     <?php
@@ -655,7 +655,7 @@ function admin_login_view(string $error): void
 <meta name="robots" content="noindex, nofollow">
 <title>Sign in · <?= e(setting('site_name')) ?></title>
 <link rel="icon" href="<?= e(site_image(setting('logo'), 32)) ?>">
-<link rel="stylesheet" href="assets/admin.css?v=<?= e(asset_version('assets/admin.css')) ?>">
+<link rel="stylesheet" href="<?= e(url('assets/admin.css')) ?>?v=<?= e(asset_version('assets/admin.css')) ?>">
 </head>
 <body class="a-login-body">
   <main class="a-login">
