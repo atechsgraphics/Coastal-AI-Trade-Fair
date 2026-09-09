@@ -152,6 +152,10 @@ function site_footer(): void
     <div class="footer-brand">
       <a class="brand" href="<?= e(url('index.php')) ?>"><img src="<?= e($logo) ?>" alt="<?= e(setting('event_name')) ?>"></a>
       <p><?= e(setting('event_tagline')) ?></p>
+      <div class="footer-foundation-logo">
+        <span>Hosted by</span>
+        <img src="<?= e(site_image('images/WhatsApp Image 2026-09-01 at 20.42.24.jpeg', 640)) ?>" alt="<?= e(setting('org_name')) ?>">
+      </div>
       <?php if ($socials): ?>
         <div class="footer-social">
           <?php foreach ($socials as $label => $url): ?>
@@ -202,6 +206,10 @@ function site_footer(): void
     <span><?= e(setting('venue_city')) ?></span>
   </div>
   <div class="shell footer-note"><?= e(setting('footer_note')) ?></div>
+  <div class="shell footer-credit">
+    <span>Website designed &amp; developed by</span>
+    <a href="https://amatetahost.com/" target="_blank" rel="noopener">AMATETA TECHNOLOGY <small>amatetahost.com</small> <b aria-hidden="true">↗</b></a>
+  </div>
 </footer>
 <script src="<?= e(url('assets/site.js')) ?>?v=<?= e(asset_version('assets/site.js')) ?>"></script>
 </body>
@@ -452,4 +460,55 @@ function page_hero(array $page): void
   </div>
 </section>
     <?php
+}
+
+/**
+ * The sessions inside one programme day, newest schema first.
+ *
+ * A session may point at somebody already on file under Speakers, so their
+ * photo and role come along, or simply carry a typed-in name for when the
+ * person has not been added yet. Both are folded into the same shape here so
+ * the page rendering does not have to care which it is.
+ */
+function programme_sessions(int $dayId): array
+{
+    static $cache = null;
+
+    if ($cache === null) {
+        $cache = [];
+        if (!db_table_exists('programme_sessions')) {
+            return [];
+        }
+        foreach (db_all('SELECT * FROM programme_sessions WHERE is_active = 1 ORDER BY day_id, position, id') as $row) {
+            $speaker = null;
+            if ((int) $row['speaker_id'] > 0) {
+                $speaker = db_one('SELECT * FROM speakers WHERE id = :id AND is_active = 1', [':id' => (int) $row['speaker_id']]);
+            }
+
+            $row['person'] = $speaker !== null
+                ? [
+                    'name'  => (string) $speaker['name'],
+                    'role'  => trim((string) $speaker['role'] . ((string) $speaker['organisation'] !== '' ? ', ' . $speaker['organisation'] : ''), ', '),
+                    'photo' => (string) $speaker['photo'],
+                ]
+                : (trim((string) $row['speaker_name']) !== ''
+                    ? ['name' => (string) $row['speaker_name'], 'role' => (string) $row['speaker_role'], 'photo' => '']
+                    : null);
+
+            $cache[(int) $row['day_id']][] = $row;
+        }
+    }
+
+    return $cache[$dayId] ?? [];
+}
+
+/** The times of a session as one readable string, or '' when it has none. */
+function programme_time(array $session): string
+{
+    $from = trim((string) ($session['start_time'] ?? ''));
+    $to   = trim((string) ($session['end_time'] ?? ''));
+    if ($from === '' && $to === '') {
+        return '';
+    }
+    return $to === '' ? $from : $from . ' – ' . $to;
 }

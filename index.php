@@ -112,6 +112,21 @@ foreach (lines(setting('hero_slides')) as $slide) {
   </div>
 </section>
 
+<!-- ====================================================== COMMUNITY VISUAL -->
+<section class="visual-story">
+  <div class="shell visual-story-grid">
+    <figure class="visual-story-image reveal">
+      <img src="<?= e(site_image('images/generated/coastal-makers-workspace.png', 1100)) ?>" alt="Young Namibian makers collaborating around a robotics project by the coast" loading="lazy">
+    </figure>
+    <div class="visual-story-copy reveal reveal-delay-1">
+      <p class="label">BUILT TOGETHER</p>
+      <h2>A place for people who turn <em>possibility into progress.</em></h2>
+      <p>From first ideas to real partnerships, the fair puts practical technology in the hands of the people shaping Namibia’s next chapter.</p>
+      <a class="text-link" href="about.php">Meet the vision behind the fair <span aria-hidden="true">→</span></a>
+    </div>
+  </div>
+</section>
+
 <!-- ======================================================== SHOWCASE -->
 <?php if (setting('showcase_image') !== '' || setting('showcase_title') !== ''): ?>
   <section class="showcase on-dark">
@@ -140,11 +155,32 @@ foreach (lines(setting('hero_slides')) as $slide) {
       <?php section_head(setting('programme_label'), setting('programme_title')); ?>
       <div class="programme-grid">
         <?php foreach ($days as $i => $day): ?>
+          <?php
+          $topics = lines((string) ($day['topics'] ?? ''));
+          $count  = count(programme_sessions((int) $day['id']));
+          ?>
           <article class="day-card reveal reveal-delay-<?= min($i, 3) ?>">
             <span class="day-no"><?= e($day['day_label']) ?></span>
             <h3><?= e($day['title']) ?></h3>
             <p class="date"><?= e($day['date_text']) ?></p>
-            <?php if ($day['summary'] !== ''): ?><p class="summary"><?= e($day['summary']) ?></p><?php endif; ?>
+
+            <?php if (trim((string) ($day['focus'] ?? '')) !== ''): ?>
+              <p class="summary"><?= e($day['focus']) ?></p>
+            <?php elseif ($day['summary'] !== ''): ?>
+              <p class="summary"><?= e($day['summary']) ?></p>
+            <?php endif; ?>
+
+            <?php if ($topics): ?>
+              <ul class="day-card-topics">
+                <?php foreach (array_slice($topics, 0, 4) as $topic): ?>
+                  <li><?= e($topic) ?></li>
+                <?php endforeach; ?>
+              </ul>
+            <?php endif; ?>
+
+            <?php if ($count > 0): ?>
+              <p class="day-card-count"><?= $count ?> <?= $count === 1 ? 'session' : 'sessions' ?></p>
+            <?php endif; ?>
           </article>
         <?php endforeach; ?>
       </div>
@@ -264,9 +300,9 @@ foreach (lines(setting('hero_slides')) as $slide) {
     <?php endforeach; ?>
 
     <?php foreach ($grouped['foundation'] ?? [] as $host): ?>
-      <div class="host-strip reveal">
+      <div class="host-strip host-foundation reveal">
         <?php if ($host['logo'] !== ''): ?>
-          <img src="<?= e(site_image($host['logo'], 66)) ?>" alt="<?= e($host['name']) ?>" loading="lazy">
+          <img src="<?= e(site_image($host['logo'], 520)) ?>" alt="<?= e($host['name']) ?>" loading="lazy">
         <?php endif; ?>
         <div>
           <p class="host-role"><?= e($host['role_label']) ?></p>

@@ -181,8 +181,33 @@ function admin_resources(): array
                 'title'     => ['label' => 'Theme / title', 'type' => 'text', 'required' => true],
                 'summary'   => ['label' => 'Short summary', 'type' => 'text', 'help' => 'One line, shown on the home page card.'],
                 'details'   => ['label' => 'Full description', 'type' => 'textarea', 'rows' => 4, 'help' => 'Shown on the programme page.'],
+                'focus'     => ['label' => 'Focus of the day', 'type' => 'textarea', 'rows' => 2, 'help' => 'One or two sentences on what this day sets out to do.'],
+                'topics'    => ['label' => 'Topics covered', 'type' => 'list', 'rows' => 5, 'help' => 'One topic per line. Shown as a list under the day.'],
                 'position'  => ['label' => 'Order', 'type' => 'number'],
                 'is_active' => ['label' => 'Visible', 'type' => 'bool'],
+            ],
+        ],
+
+        'programme_sessions' => [
+            'label'    => 'Sessions & speakers',
+            'singular' => 'session',
+            'group'    => 'Event content',
+            'icon'     => '◇',
+            'intro'    => 'The individual talks and workshops inside each programme day, and who is presenting them. Add as many as you like per day; they appear on the programme page under the day they belong to, in the order set here.',
+            'list'     => ['title' => 'Session', 'day_id' => 'Day', 'start_time' => 'From', 'speaker_name' => 'Speaker'],
+            'list_format' => ['day_id' => 'admin_day_name'],
+            'filter'   => ['day_id' => 'Day'],
+            'fields'   => [
+                'day_id'       => ['label' => 'Which day', 'type' => 'select', 'required' => true, 'options' => 'admin_day_choices'],
+                'start_time'   => ['label' => 'Starts', 'type' => 'text', 'placeholder' => '09:00'],
+                'end_time'     => ['label' => 'Ends', 'type' => 'text', 'placeholder' => '10:30'],
+                'title'        => ['label' => 'Session title', 'type' => 'text', 'required' => true],
+                'description'  => ['label' => 'What it covers', 'type' => 'textarea', 'rows' => 3],
+                'speaker_id'   => ['label' => 'Speaker on file', 'type' => 'select', 'options' => 'admin_speaker_choices', 'help' => 'Pick somebody already added under Speakers, so their photo and biography are used. Leave blank and type a name below instead.'],
+                'speaker_name' => ['label' => 'Or just a name', 'type' => 'text', 'help' => 'Use this when the speaker is not on file yet.'],
+                'speaker_role' => ['label' => 'Their role', 'type' => 'text', 'placeholder' => 'Facilitator', 'help' => 'Only used with a typed-in name.'],
+                'position'     => ['label' => 'Order', 'type' => 'number'],
+                'is_active'    => ['label' => 'Visible', 'type' => 'bool'],
             ],
         ],
 
@@ -315,6 +340,33 @@ function admin_stall_kinds(): array
 }
 
 /** The page/section pairs used by the "Content cards" resource. */
+/** The programme days, for the "which day" menu on a session. */
+function admin_day_choices(): array
+{
+    $out = [];
+    foreach (db_all('SELECT id, day_label, title FROM programme_days ORDER BY position, id') as $row) {
+        $out[(string) $row['id']] = trim($row['day_label'] . ' — ' . $row['title'], ' —');
+    }
+    return $out;
+}
+
+/** Show which day a session belongs to in the list view. */
+function admin_day_name($value, array $row = []): string
+{
+    $day = db_one('SELECT day_label, title FROM programme_days WHERE id = :id', [':id' => (int) $value]);
+    return $day ? trim($day['day_label'] . ' — ' . $day['title'], ' —') : '—';
+}
+
+/** Everybody already added under Speakers. */
+function admin_speaker_choices(): array
+{
+    $out = ['' => 'Nobody on file — use the name below'];
+    foreach (db_all('SELECT id, name, role FROM speakers ORDER BY position, id') as $row) {
+        $out[(string) $row['id']] = trim($row['name'] . ($row['role'] !== '' ? ' · ' . $row['role'] : ''));
+    }
+    return $out;
+}
+
 function admin_block_sections(): array
 {
     return [

@@ -25,14 +25,56 @@ page_hero($page);
     </div>
 
     <?php if ($days): ?>
-      <div class="agenda reveal" style="margin-top:clamp(2.5rem,5vw,4rem)">
+      <div class="agenda agenda-full reveal" style="margin-top:clamp(2.5rem,5vw,4rem)">
         <?php foreach ($days as $day): ?>
+          <?php
+          $topics   = lines((string) ($day['topics'] ?? ''));
+          $sessions = programme_sessions((int) $day['id']);
+          ?>
           <article>
             <time><?= e($day['day_label']) ?><small><?= e($day['date_text']) ?></small></time>
             <div>
               <h3><?= e($day['title']) ?></h3>
-              <?php if ($day['summary'] !== ''): ?><p><strong><?= e($day['summary']) ?></strong></p><?php endif; ?>
+
+              <?php if (trim((string) ($day['focus'] ?? '')) !== ''): ?>
+                <p class="day-focus"><span>Focus</span><?= e($day['focus']) ?></p>
+              <?php elseif ($day['summary'] !== ''): ?>
+                <p><strong><?= e($day['summary']) ?></strong></p>
+              <?php endif; ?>
+
               <?php if ($day['details'] !== ''): ?><p><?= nl($day['details']) ?></p><?php endif; ?>
+
+              <?php if ($topics): ?>
+                <ul class="day-topics">
+                  <?php foreach ($topics as $topic): ?>
+                    <li><?= e($topic) ?></li>
+                  <?php endforeach; ?>
+                </ul>
+              <?php endif; ?>
+
+              <?php if ($sessions): ?>
+                <ol class="day-sessions">
+                  <?php foreach ($sessions as $session): ?>
+                    <?php $when = programme_time($session); $who = $session['person']; ?>
+                    <li>
+                      <?php if ($when !== ''): ?><span class="ds-time"><?= e($when) ?></span><?php endif; ?>
+                      <div class="ds-body">
+                        <strong><?= e($session['title']) ?></strong>
+                        <?php if (trim((string) $session['description']) !== ''): ?>
+                          <p><?= nl($session['description']) ?></p>
+                        <?php endif; ?>
+                        <?php if ($who !== null): ?>
+                          <p class="ds-who">
+                            <?php $photo = $who['photo'] !== '' ? section_photo_path($who['photo'], 120) : ''; ?>
+                            <?php if ($photo !== ''): ?><img src="<?= e($photo) ?>" alt=""><?php endif; ?>
+                            <span><strong><?= e($who['name']) ?></strong><?= $who['role'] !== '' ? '<small>' . e($who['role']) . '</small>' : '' ?></span>
+                          </p>
+                        <?php endif; ?>
+                      </div>
+                    </li>
+                  <?php endforeach; ?>
+                </ol>
+              <?php endif; ?>
             </div>
           </article>
         <?php endforeach; ?>

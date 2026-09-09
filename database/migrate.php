@@ -14,7 +14,7 @@ declare(strict_types=1);
  */
 
 /** Bump this when new tables, columns or seed rows are added below. */
-const BOOKING_SCHEMA_VERSION = 13;
+const BOOKING_SCHEMA_VERSION = 14;
 
 function booking_schema_marker(): string
 {
@@ -307,6 +307,8 @@ SQL;
     booking_correct_content();
     booking_correct_content_v11();
     booking_configure_mailbox();
+    booking_programme_tables();
+    booking_seed_masterclass();
     booking_prepare_storage();
 
     @file_put_contents(booking_schema_marker(), (string) BOOKING_SCHEMA_VERSION);
@@ -356,6 +358,11 @@ function booking_add_columns(): array
         // Set on an account whose password was handed over rather than chosen,
         // so the control panel makes them pick their own before going further.
         'users' => ['must_change_password' => 'INTEGER NOT NULL DEFAULT 0'],
+        // What each masterclass day is for, and what it covers.
+        'programme_days' => [
+            'focus'  => 'TEXT',
+            'topics' => 'TEXT',
+        ],
     ];
 
     $added = [];
@@ -948,4 +955,123 @@ function booking_configure_mailbox(): void
     // Let the site decide for itself, so it starts using the mailbox the
     // moment a password appears rather than needing a second visit here.
     booking_setting_correct('bk_mail_transport', 'mail', 'auto');
+}
+
+
+/* ==========================================================================
+   THE MASTERCLASS PROGRAMME (schema version 14)
+   --------------------------------------------------------------------------
+   Each day now carries a focus and a list of topics, and can hold any number
+   of sessions underneath it — a time, a title, and who is speaking. The team
+   sets the names themselves in the control panel, so this seeds the shape and
+   the curriculum and leaves the people to them.
+
+   The day text is only replaced where it still holds what the installer wrote,
+   so anything already edited survives.
+   ========================================================================== */
+
+function booking_programme_tables(): void
+{
+    if (db_is_mysql()) {
+        db()->exec(
+            'CREATE TABLE IF NOT EXISTS programme_sessions (
+               id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+               day_id        INT UNSIGNED NOT NULL DEFAULT 0,
+               start_time    VARCHAR(10)  NOT NULL DEFAULT "",
+               end_time      VARCHAR(10)  NOT NULL DEFAULT "",
+               title         VARCHAR(190) NOT NULL DEFAULT "",
+               description   TEXT         NULL,
+               speaker_id    INT UNSIGNED NOT NULL DEFAULT 0,
+               speaker_name  VARCHAR(190) NOT NULL DEFAULT "",
+               speaker_role  VARCHAR(190) NOT NULL DEFAULT "",
+               position      INT          NOT NULL DEFAULT 0,
+               is_active     TINYINT(1)   NOT NULL DEFAULT 1
+             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+        db()->exec('CREATE INDEX idx_sessions_day ON programme_sessions (day_id, position)');
+        return;
+    }
+
+    db()->exec(
+        'CREATE TABLE IF NOT EXISTS programme_sessions (
+           id            INTEGER PRIMARY KEY AUTOINCREMENT,
+           day_id        INTEGER NOT NULL DEFAULT 0,
+           start_time    TEXT    NOT NULL DEFAULT "",
+           end_time      TEXT    NOT NULL DEFAULT "",
+           title         TEXT    NOT NULL DEFAULT "",
+           description   TEXT,
+           speaker_id    INTEGER NOT NULL DEFAULT 0,
+           speaker_name  TEXT    NOT NULL DEFAULT "",
+           speaker_role  TEXT    NOT NULL DEFAULT "",
+           position      INTEGER NOT NULL DEFAULT 0,
+           is_active     INTEGER NOT NULL DEFAULT 1
+         )'
+    );
+    db()->exec('CREATE INDEX IF NOT EXISTS idx_sessions_day ON programme_sessions (day_id, position)');
+}
+
+/**
+ * The curriculum the event team confirmed for the three masterclass days.
+ * Only written where the day still holds the wording the installer put there.
+ */
+function booking_seed_masterclass(): void
+{
+    $days = [
+        [
+            'match'  => 'AI Fundamentals & Business Automation',
+            'title'  => 'AI Foundations & Digital Adoption',
+            'focus'  => 'Overcoming traditional barriers to digital adoption and introducing core AI concepts.',
+            'topics' => "Digital readiness\nIntroductory AI tools for small businesses\nShifting to digital-first business models",
+        ],
+        [
+            'match'  => 'Digital Marketing, Content Creation & Branding',
+            'title'  => 'Operational AI & Business Productivity',
+            'focus'  => 'Hands-on application of AI in daily operations, marketing and security.',
+            'topics' => "AI-driven content creation\nStreamlining daily workflows\nBoosting sales strategies\nSecuring digital business assets",
+        ],
+        [
+            'match'  => 'Trade Readiness & Financial Tech Strategy',
+            'title'  => 'Market Expansion, AfCFTA Trade & Closing',
+            'focus'  => 'Scaling your business across regional markets, and the official wrap-up.',
+            'topics' => "Leveraging AI for AfCFTA cross-border trade\nMarket expansion strategies\nFormal Certificate of Completion presentation",
+        ],
+    ];
+
+    foreach ($days as $day) {
+        $row = db_one('SELECT id, title, focus FROM programme_days WHERE title = :t', [':t' => $day['match']]);
+        if ($row === null) {
+            // Already renamed by the team, or seeded differently: only fill a
+            // blank focus on a day that already carries the new title.
+            $row = db_one('SELECT id, title, focus FROM programme_days WHERE title = :t', [':t' => $day['title']]);
+            if ($row === null) {
+                continue;
+            }
+            if (trim((string) $row['focus']) === '') {
+                db_run(
+                    'UPDATE programme_days SET focus = :f, topics = :p WHERE id = :id',
+                    [':f' => $day['focus'], ':p' => $day['topics'], ':id' => (int) $row['id']]
+                );
+            }
+            continue;
+        }
+
+        db_run(
+            'UPDATE programme_days SET title = :t, focus = :f, topics = :p WHERE id = :id',
+            [':t' => $day['title'], ':f' => $day['focus'], ':p' => $day['topics'], ':id' => (int) $row['id']]
+        );
+    }
+
+    // Day four is the trade fair's own closing day, not part of the taught
+    // course, so it gets a focus of its own rather than one of the three above.
+    $fourth = db_one("SELECT id, focus FROM programme_days WHERE title = 'SME Ideas Market & Networking'");
+    if ($fourth !== null && trim((string) $fourth['focus']) === '') {
+        db_run(
+            'UPDATE programme_days SET focus = :f, topics = :p WHERE id = :id',
+            [
+                ':f'  => 'The exhibition floor at full stretch, and the connections that outlast the week.',
+                ':p'  => "Exhibitor discovery\nBusiness matching\nInvestor conversations",
+                ':id' => (int) $fourth['id'],
+            ]
+        );
+    }
 }

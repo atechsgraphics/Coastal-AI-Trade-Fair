@@ -400,7 +400,7 @@ function blocks(string $page, string $section): array
 /** Active rows of a content table, ordered for display. */
 function active(string $table, string $where = '', array $params = []): array
 {
-    $allowed = ['programme_days', 'packages', 'stalls', 'partners', 'speakers', 'gallery', 'faqs', 'blocks'];
+    $allowed = ['programme_days', 'programme_sessions', 'packages', 'stalls', 'partners', 'speakers', 'gallery', 'faqs', 'blocks'];
     if (!in_array($table, $allowed, true)) {
         return [];
     }

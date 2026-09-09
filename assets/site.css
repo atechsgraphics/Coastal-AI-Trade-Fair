@@ -2050,6 +2050,425 @@ em {
   .header-inner { gap: .75rem; }
 }
 
+/* ===========================================================================
+   HOME PAGE FINISHING PASS
+   A more generous, composed brand presence and a little depth in the first
+   viewport make the arrival feel considered without asking visitors to wait
+   for the content. All entrance effects remain scoped to JavaScript, so the
+   page is fully readable if it is unavailable.
+   ========================================================================== */
+
+/* The logo is intentionally prominent, but it is held in a fixed flex box so
+   it remains perfectly centred with the navigation as the header shrinks. */
+@media (min-width: 981px) {
+  :root {
+    --brand-h: clamp(68px, 5.6vw, 82px);
+    --brand-h-scrolled: clamp(54px, 4.4vw, 66px);
+  }
+  .header-inner { padding-block: .8rem; }
+}
+
+.page-home .hero {
+  min-height: min(780px, calc(100svh - var(--brand-h)));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  isolation: isolate;
+}
+
+/* A pair of slow light pools gives the photo wash some movement even during
+   the still interval between slides. */
+.page-home .hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: min(62vw, 820px);
+  aspect-ratio: 1;
+  right: -17vw;
+  top: -28%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(34, 201, 240, .19) 0%, rgba(34, 201, 240, .055) 36%, transparent 69%);
+  filter: blur(4px);
+  pointer-events: none;
+  animation: hero-glow-drift 15s ease-in-out infinite alternate;
+}
+
+.page-home .hero::after {
+  z-index: 0;
+  animation: grid-drift 22s linear infinite;
+}
+.page-home .hero-grid,
+.page-home .scroll-cue { z-index: 2; }
+
+.page-home .hero-visual {
+  padding: clamp(.75rem, 1.7vw, 1.25rem);
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: calc(var(--radius-lg) + 10px);
+  background: linear-gradient(145deg, rgba(255, 255, 255, .13), rgba(255, 255, 255, .025) 44%, rgba(34, 201, 240, .09));
+  box-shadow: 0 32px 80px rgba(0, 0, 0, .2);
+}
+
+.page-home .hero-visual::before {
+  content: "";
+  position: absolute;
+  inset: clamp(.75rem, 1.7vw, 1.25rem);
+  border: 1px solid rgba(34, 201, 240, .45);
+  border-radius: calc(var(--radius-lg) - 3px);
+  transform: translate(12px, 12px);
+  pointer-events: none;
+}
+
+.page-home .hero-visual .frame {
+  box-shadow: 0 28px 72px rgba(0, 0, 0, .46);
+  animation: frame-float 8s ease-in-out infinite;
+}
+.page-home .hero-visual .frame img { animation: image-breathe 12s ease-in-out infinite alternate; }
+
+/* One larger mark anchors the artwork instead of reading like a small sticker. */
+.page-home .hero-badge {
+  width: clamp(150px, 18vw, 228px);
+  right: clamp(-.5rem, -1vw, -1.1rem);
+  bottom: clamp(-3.6rem, -4vw, -2.3rem);
+  filter: drop-shadow(0 16px 30px rgba(0, 0, 0, .6));
+  animation-duration: 7.5s;
+}
+
+.js .page-home .hero-eyebrow,
+.js .page-home .hero h1,
+.js .page-home .hero-copy,
+.js .page-home .hero-actions,
+.js .page-home .countdown,
+.js .page-home .hero-stats,
+.js .page-home .hero-visual,
+.js .page-home .scroll-cue {
+  animation: hero-rise .85s var(--ease) both;
+}
+.js .page-home .hero-eyebrow { animation-delay: .08s; }
+.js .page-home .hero h1 { animation-delay: .16s; }
+.js .page-home .hero-copy { animation-delay: .26s; }
+.js .page-home .hero-actions { animation-delay: .36s; }
+.js .page-home .countdown { animation-delay: .46s; }
+.js .page-home .hero-stats { animation-delay: .56s; }
+.js .page-home .hero-visual { animation-delay: .22s; }
+.js .page-home .scroll-cue { animation-delay: .68s; }
+
+@keyframes hero-rise {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes hero-glow-drift {
+  from { transform: translate3d(-5%, -2%, 0) scale(.94); opacity: .72; }
+  to { transform: translate3d(6%, 9%, 0) scale(1.08); opacity: 1; }
+}
+@keyframes grid-drift {
+  to { background-position: 74px 74px, 74px 74px; }
+}
+@keyframes frame-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+@keyframes image-breathe {
+  from { transform: scale(1.01); }
+  to { transform: scale(1.07); }
+}
+
+@media (max-width: 980px) {
+  .page-home .hero { min-height: auto; }
+  .page-home .hero-visual { max-width: 590px; }
+}
+
+@media (max-width: 760px) {
+  .page-home .hero { display: block; }
+  .page-home .hero::before { width: 110vw; right: -42vw; top: -10%; }
+  .page-home .hero-visual { padding: 0; border: 0; background: none; box-shadow: none; }
+  .page-home .hero-visual::before { display: none; }
+  .page-home .hero.has-slides .hero-badge {
+    width: clamp(158px, 46vw, 202px);
+    margin: .35rem auto 0;
+  }
+}
+
+/* ===========================================================================
+   SITE-WIDE VISUAL SYSTEM
+   The chrome carries the same coastal, high-energy character on every page,
+   while the content itself stays calm enough to be easy to scan.
+   ========================================================================== */
+
+.site-header {
+  background:
+    radial-gradient(70% 140% at 4% 0%, rgba(34, 201, 240, .18), transparent 52%),
+    rgba(3, 16, 28, .88);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, .14);
+}
+.site-header::after {
+  content: "";
+  position: absolute;
+  height: 2px;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  background: linear-gradient(90deg, transparent, var(--accent) 16%, var(--gold) 49%, var(--accent) 82%, transparent);
+  opacity: .78;
+}
+.site-header.scrolled {
+  background:
+    radial-gradient(65% 150% at 4% 0%, rgba(34, 201, 240, .11), transparent 52%),
+    rgba(3, 16, 28, .96);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .24);
+}
+.site-header .brand { position: relative; z-index: 1; }
+.site-header .brand::before {
+  content: "";
+  position: absolute;
+  inset: -12px -18px;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(34, 201, 240, .18), transparent 68%);
+  opacity: .9;
+  transition: transform .35s var(--ease), opacity .35s var(--ease);
+}
+.site-header .brand:hover::before { transform: scale(1.18); opacity: 1; }
+.main-nav a:not(.nav-cta) { letter-spacing: .01em; }
+.main-nav .nav-cta {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(110deg, var(--accent), #68e0f8 53%, var(--gold));
+  box-shadow: 0 10px 28px rgba(34, 201, 240, .24);
+}
+.main-nav .nav-cta:hover { background: linear-gradient(110deg, #77e5fa, var(--accent), #ffd16f); }
+
+/* Shared inner-page heroes carry subtle movement and a stronger sense of
+   occasion without requiring a separate photo on every page. */
+.page-hero {
+  min-height: min(490px, 56svh);
+  display: flex;
+  align-items: center;
+  isolation: isolate;
+  background:
+    radial-gradient(100% 120% at 100% -10%, rgba(34, 201, 240, .27), transparent 52%),
+    radial-gradient(60% 95% at 8% 105%, rgba(242, 181, 68, .16), transparent 62%),
+    linear-gradient(145deg, #02101c, var(--ink-2) 62%, #06192a);
+}
+.page-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: .36;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, .09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .09) 1px, transparent 1px);
+  background-size: 68px 68px;
+  mask-image: linear-gradient(90deg, #000, transparent 78%);
+  -webkit-mask-image: linear-gradient(90deg, #000, transparent 78%);
+  animation: grid-drift 24s linear infinite;
+}
+.page-hero .shell { position: relative; z-index: 1; }
+.page-hero .hero-glow {
+  width: min(55vw, 720px);
+  animation: hero-glow-drift 14s ease-in-out infinite alternate;
+}
+
+/* A full-bleed editorial moment brings a genuine human image into the home
+   journey and gives the next section a deliberate visual pause. */
+.visual-story {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(3rem, 7vw, 6rem) 0;
+  background: #eaf4f4;
+}
+.visual-story::before {
+  content: "";
+  position: absolute;
+  width: min(44vw, 680px);
+  aspect-ratio: 1;
+  right: -18vw;
+  top: -55%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(34, 201, 240, .25), transparent 67%);
+  pointer-events: none;
+}
+.visual-story-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.22fr) minmax(260px, .78fr);
+  align-items: center;
+  gap: clamp(2rem, 6vw, 6rem);
+}
+.visual-story-image {
+  position: relative;
+  margin: 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 28px 65px rgba(4, 18, 31, .18);
+}
+.visual-story-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(4, 18, 31, .08), transparent 50%, rgba(34, 201, 240, .16));
+  pointer-events: none;
+}
+.visual-story-image img {
+  width: 100%;
+  min-height: 360px;
+  object-fit: cover;
+  transition: transform .8s var(--ease);
+}
+.visual-story-image:hover img { transform: scale(1.035); }
+.visual-story-copy { max-width: 32rem; }
+.visual-story-copy h2 { font-size: clamp(2rem, 3.6vw, 3.5rem); }
+.visual-story-copy > p:not(.label) { margin: 1.4rem 0 1.65rem; color: var(--muted); font-size: 1.05rem; }
+
+/* The footer becomes an unmistakable closing signature rather than a plain
+   information block. */
+.site-footer {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(82% 100% at 100% 0%, rgba(34, 201, 240, .18), transparent 54%),
+    radial-gradient(55% 100% at 2% 100%, rgba(242, 181, 68, .12), transparent 65%),
+    linear-gradient(145deg, #071e33, #020b14 70%);
+}
+.site-footer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: .22;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255, 255, 255, .42) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+}
+.site-footer > .shell { position: relative; z-index: 1; }
+.footer-grid { padding-bottom: clamp(3rem, 5vw, 4.5rem); }
+.footer-brand .brand { width: fit-content; }
+.footer-brand .brand img { filter: drop-shadow(0 8px 18px rgba(0, 0, 0, .35)); }
+.footer-col h3 { color: #8eeafb; }
+.footer-col a:hover { color: var(--accent); }
+.footer-bottom { border-top-color: rgba(255, 255, 255, .16); }
+.footer-credit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .8rem 1.25rem;
+  margin-top: 1.6rem;
+  padding: 1.05rem 1.25rem;
+  border: 1px solid rgba(34, 201, 240, .28);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .055);
+  color: rgba(255, 255, 255, .56);
+  font-family: var(--font-display);
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.footer-credit a {
+  display: inline-flex;
+  align-items: baseline;
+  gap: .55rem;
+  color: #fff;
+  transition: color .25s var(--ease), transform .25s var(--ease);
+}
+.footer-credit a:hover { color: var(--accent); transform: translateX(3px); }
+.footer-credit small { color: var(--gold); font-size: .68rem; letter-spacing: .08em; text-transform: none; }
+.footer-credit b { color: var(--accent); font-size: 1rem; }
+
+@media (max-width: 900px) {
+  .visual-story-grid { grid-template-columns: 1fr; gap: 2.25rem; }
+  .visual-story-copy { max-width: 40rem; }
+  .page-hero { min-height: auto; }
+}
+
+@media (max-width: 620px) {
+  .site-header::after { opacity: .58; }
+  .visual-story-image img { min-height: 280px; }
+  .footer-credit { align-items: flex-start; flex-direction: column; }
+  .footer-credit a { align-items: flex-start; flex-direction: column; gap: .1rem; }
+}
+
+/* ===========================================================================
+   LOGO SCALE
+   The event and host-foundation marks are brand assets, not small interface
+   icons. These generous, shape-aware boxes keep their full artwork readable.
+   ========================================================================== */
+
+@media (min-width: 981px) {
+  :root {
+    --brand-h: clamp(82px, 7vw, 104px);
+    --brand-h-scrolled: clamp(64px, 5.5vw, 82px);
+  }
+}
+@media (max-width: 980px) {
+  :root { --brand-h: clamp(52px, 9vw, 64px); --brand-h-scrolled: 50px; }
+}
+
+/* The event mark now has a proud, readable scale in the footer too. */
+.footer-brand .brand {
+  height: clamp(100px, 8vw, 132px);
+  margin-bottom: 1.45rem;
+}
+
+/* The transparent, wide Atusheni Foundation lock-up is given its own panel
+   instead of being squeezed into a square logo thumbnail. */
+.footer-foundation-logo {
+  display: grid;
+  gap: .45rem;
+  width: min(100%, 355px);
+  margin-top: 1.65rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, .16);
+}
+.footer-foundation-logo span {
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: .64rem;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.footer-foundation-logo img {
+  width: 100%;
+  height: auto;
+  max-height: 126px;
+  object-fit: contain;
+  object-position: left center;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, .28));
+}
+
+.host-strip.host-foundation {
+  gap: clamp(1.25rem, 3vw, 2.4rem);
+  padding: clamp(1.5rem, 3vw, 2.15rem);
+}
+.host-strip.host-foundation img {
+  width: clamp(220px, 27vw, 360px);
+  height: clamp(92px, 11vw, 142px);
+  padding: 0;
+  border-radius: 12px;
+  object-fit: contain;
+  object-position: left center;
+}
+.host-foundation-grid { grid-template-columns: minmax(0, 1fr); }
+.host-foundation-card {
+  padding: clamp(1.4rem, 3vw, 2.2rem);
+}
+.host-foundation-card .logo-media {
+  height: clamp(180px, 22vw, 270px) !important;
+  padding: clamp(1rem, 3vw, 2rem);
+}
+.host-foundation-card .logo-media img { width: 100%; height: 100%; object-fit: contain; }
+
+@media (max-width: 620px) {
+  .footer-brand .brand { height: 92px; }
+  .footer-foundation-logo { width: min(100%, 300px); }
+  .footer-foundation-logo img { max-height: 106px; }
+  .host-strip.host-foundation img { width: min(100%, 310px); height: 112px; }
+}
+
 /* ==========================================================================
    MESSAGES ON THE PALE SECTIONS
    .alert is written for the dark bands: pale pink text on a barely-there red.
@@ -2189,4 +2608,155 @@ em {
   color: var(--muted);
   font-size: .93rem;
   margin: 0;
+}
+
+/* ==========================================================================
+   THE PROGRAMME
+   Each day carries a focus, the topics it covers, and any sessions the team
+   has added underneath with the person presenting them.
+   ========================================================================== */
+
+/* ------------------------------------------- the day cards on the home page */
+.day-card-topics {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+.day-card-topics li {
+  padding: .3rem .7rem;
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 999px;
+  font-size: .74rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, .78);
+}
+.day-card-count {
+  margin: 1rem 0 0;
+  font-family: var(--font-display);
+  font-size: .74rem;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* ----------------------------------------- the full agenda on the programme */
+/* "Focus" reads as a label rather than another paragraph, so the eye can find
+   the point of the day without reading the whole entry. */
+.day-focus {
+  margin: .2rem 0 .9rem;
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+.day-focus span {
+  display: inline-block;
+  margin-right: .55rem;
+  padding: .16rem .55rem;
+  border-radius: 6px;
+  background: rgba(34, 201, 240, .14);
+  color: var(--accent-deep);
+  font-family: var(--font-display);
+  font-size: .66rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  vertical-align: 2px;
+}
+
+.day-topics {
+  list-style: none;
+  margin: 0 0 .4rem;
+  padding: 0;
+  display: grid;
+  gap: .45rem;
+}
+.day-topics li {
+  position: relative;
+  padding-left: 1.4rem;
+  color: var(--muted);
+  font-size: .95rem;
+  line-height: 1.5;
+}
+/* A small mark rather than a bullet, so a list of topics does not read as a
+   list of instructions. */
+.day-topics li::before {
+  content: "";
+  position: absolute;
+  left: .25rem;
+  top: .62em;
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: rotate(45deg);
+}
+
+/* ----------------------------------------------------- sessions & speakers */
+.day-sessions {
+  list-style: none;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: .7rem;
+}
+.day-sessions > li {
+  display: grid;
+  grid-template-columns: 7.5rem 1fr;
+  gap: 0 1.1rem;
+  padding: 1rem 1.1rem;
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.ds-time {
+  font-family: var(--font-display);
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--accent-deep);
+  letter-spacing: .02em;
+  padding-top: .1rem;
+}
+.ds-body > strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  line-height: 1.35;
+  color: var(--text);
+}
+.ds-body > p {
+  margin: .4rem 0 0;
+  color: var(--muted);
+  font-size: .92rem;
+  line-height: 1.55;
+}
+
+.ds-who {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin: .8rem 0 0 !important;
+  padding-top: .75rem;
+  border-top: 1px solid var(--line);
+}
+.ds-who img {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+}
+.ds-who span { display: block; line-height: 1.3; }
+.ds-who strong { font-family: var(--font-display); font-size: .88rem; color: var(--text); }
+.ds-who small { display: block; font-size: .78rem; color: var(--muted); margin-top: .1rem; }
+
+/* A session with no time set should not leave an empty column. */
+.day-sessions > li:not(:has(.ds-time)) { grid-template-columns: 1fr; }
+
+@media (max-width: 620px) {
+  .day-sessions > li { grid-template-columns: 1fr; gap: .5rem; }
+  .ds-time { padding-top: 0; }
 }
