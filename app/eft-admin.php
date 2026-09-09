@@ -239,7 +239,11 @@ function eft_admin_setting_groups(): array
 
 function eft_mail_transports(): array
 {
-    return ['mail' => 'PHP mail() — simple, often unreliable', 'smtp' => 'SMTP — recommended'];
+    return [
+        'auto' => 'Automatic — use the mailbox when its password is set, otherwise PHP mail()',
+        'smtp' => 'SMTP — the mailbox on this host (recommended)',
+        'mail' => 'PHP mail() — simple, often lands in spam',
+    ];
 }
 
 function eft_smtp_security(): array

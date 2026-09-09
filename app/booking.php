@@ -312,6 +312,20 @@ function booking_notify(array $booking): bool
         . "Received:   " . date('d M Y H:i', strtotime($booking['created_at'])) . "\n\n"
         . "Open the control panel to view the full booking and download the PDF.\n";
 
+    $subject = 'New booking ' . $booking['reference'] . ' - ' . $booking['company'];
+
+    // Through the site mailer, so it uses the mailbox on the host and is
+    // recorded in the email log like everything else.
+    if (function_exists('bk_mail')) {
+        return bk_mail([
+            'to'       => $to,
+            'subject'  => $subject,
+            'text'     => $body,
+            'reply_to' => preg_replace('/[\r\n]+/', ' ', (string) $booking['email']),
+            'template' => 'exhibitor_registration',
+        ]);
+    }
+
     $headers = [
         'From: ' . setting('site_name') . ' Bookings <no-reply@' . preg_replace('/^www\./', '', (string) ($_SERVER['HTTP_HOST'] ?? 'localhost')) . '>',
         'Reply-To: ' . preg_replace('/[\r\n]+/', ' ', $booking['email']),
@@ -319,7 +333,7 @@ function booking_notify(array $booking): bool
         'MIME-Version: 1.0',
     ];
 
-    return @mail($to, 'New booking ' . $booking['reference'] . ' - ' . $booking['company'], $body, implode("\r\n", $headers));
+    return function_exists('mail') && @mail($to, $subject, $body, implode("\r\n", $headers));
 }
 
 /** Send the applicant their reference and the payment instructions. */

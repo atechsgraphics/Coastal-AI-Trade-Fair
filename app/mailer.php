@@ -24,6 +24,31 @@ declare(strict_types=1);
  *   booking_id?: int, client_id?: int, template?: string, reply_to?: string, cc?: string|string[]
  * } $message
  */
+/**
+ * Which way mail actually goes out.
+ *
+ * "auto", the default, means: use the mailbox on the host if it has been given
+ * everything it needs, and fall back to PHP's own mail() if it has not. That
+ * matters because the host's mail server is far more likely to be trusted than
+ * a bare mail() call, but a half-filled SMTP setting would send nothing at all
+ * — and silently sending nothing is worse than sending something that might
+ * land in a spam folder. Choosing "smtp" or "mail" explicitly still wins.
+ */
+function bk_mail_transport(): string
+{
+    $choice = strtolower(trim(bk('bk_mail_transport', 'auto')));
+
+    if ($choice === 'smtp' || $choice === 'mail') {
+        return $choice;
+    }
+
+    $host = trim(bk('bk_smtp_host'));
+    $user = trim(bk('bk_smtp_user'));
+    $pass = trim(bk('bk_smtp_pass'));
+
+    return ($host !== '' && $user !== '' && $pass !== '') ? 'smtp' : 'mail';
+}
+
 function bk_mail(array $message): bool
 {
     $recipients = bk_mail_addresses($message['to'] ?? []);
@@ -60,7 +85,7 @@ function bk_mail(array $message): bool
     }
     $headers += $boundaryHeaders;
 
-    $transport = strtolower(bk('bk_mail_transport', 'mail')) === 'smtp' ? 'smtp' : 'mail';
+    $transport = bk_mail_transport();
     $error = '';
 
     try {

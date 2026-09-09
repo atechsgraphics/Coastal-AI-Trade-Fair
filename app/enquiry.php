@@ -7,6 +7,12 @@ declare(strict_types=1);
  * behaviour stays identical wherever a visitor submits.
  */
 
+// The site mailer, so an enquiry can go out through the mailbox on the host
+// rather than a bare mail() call. Only eft.php used to load this, and the
+// contact page does not load eft.php — which is why enquiries were the one
+// thing on the site that could never use SMTP.
+require_once __DIR__ . '/mailer.php';
+
 function enquiry_interests(): array
 {
     return [
@@ -97,7 +103,7 @@ function enquiry_handle(): array
 function enquiry_notify(string $name, string $company, string $email, string $phone, string $interest, string $option, string $message): bool
 {
     $to = setting('email_form_to', setting('email_primary'));
-    if ($to === '' || !function_exists('mail')) {
+    if ($to === '') {
         return false;
     }
 
@@ -116,6 +122,22 @@ function enquiry_notify(string $name, string $company, string $email, string $ph
         . "Received: " . date('d M Y H:i') . "\n\n"
         . "Message:\n{$message}\n";
 
+    // Through the site's own mailer, so an enquiry travels the same way every
+    // other message does: out through the mailbox on the host, and written to
+    // the email log whether it succeeds or fails. Before this the contact form
+    // was the one thing on the site that could not use SMTP and left no trace
+    // when it did not arrive.
+    if (function_exists('bk_mail')) {
+        return bk_mail([
+            'to'       => $to,
+            'subject'  => $subject,
+            'text'     => $body,
+            'reply_to' => $clean($email),
+            'template' => 'website_enquiry',
+        ]);
+    }
+
+    // Only reached if the booking platform is switched off entirely.
     $headers = [
         'From: ' . setting('site_name') . ' Website <no-reply@' . preg_replace('/^www\./', '', (string) ($_SERVER['HTTP_HOST'] ?? 'localhost')) . '>',
         'Reply-To: ' . $clean($email),
@@ -123,7 +145,7 @@ function enquiry_notify(string $name, string $company, string $email, string $ph
         'MIME-Version: 1.0',
     ];
 
-    return @mail($to, $subject, $body, implode("\r\n", $headers));
+    return function_exists('mail') && @mail($to, $subject, $body, implode("\r\n", $headers));
 }
 
 /**

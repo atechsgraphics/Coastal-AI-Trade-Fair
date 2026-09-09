@@ -14,7 +14,7 @@ declare(strict_types=1);
  */
 
 /** Bump this when new tables, columns or seed rows are added below. */
-const BOOKING_SCHEMA_VERSION = 12;
+const BOOKING_SCHEMA_VERSION = 13;
 
 function booking_schema_marker(): string
 {
@@ -306,6 +306,7 @@ SQL;
     booking_seed_page();
     booking_correct_content();
     booking_correct_content_v11();
+    booking_configure_mailbox();
     booking_prepare_storage();
 
     @file_put_contents(booking_schema_marker(), (string) BOOKING_SCHEMA_VERSION);
@@ -919,4 +920,32 @@ function booking_seed_owner_account(): void
             ':c' => date('Y-m-d H:i:s'),
         ]
     );
+}
+
+/* ==========================================================================
+   THE HOST'S MAILBOX (schema version 13)
+   --------------------------------------------------------------------------
+   Taken from the account's own cPanel mail screen: the outgoing server is the
+   domain itself on port 465, which is SSL from the first byte rather than
+   STARTTLS, and it wants the full address as the username.
+
+   The password is deliberately not here. It belongs in storage/env.php as
+   BK_SMTP_PASS, which is never committed and never served to the web. Until it
+   is set the site keeps using PHP mail(); the moment it is, "Automatic" sends
+   everything through the mailbox instead. Nothing else needs changing.
+   ========================================================================== */
+
+function booking_configure_mailbox(): void
+{
+    booking_setting_fill('bk_smtp_host', 'coastalaitradefair.com');
+    booking_setting_fill('bk_smtp_user', 'info@coastalaitradefair.com');
+
+    // Port 465 is implicit SSL. Seeded with 587/STARTTLS, which would not
+    // connect to this host, so correct it rather than only filling a blank.
+    booking_setting_correct('bk_smtp_port', '587', '465');
+    booking_setting_correct('bk_smtp_secure', 'tls', 'ssl');
+
+    // Let the site decide for itself, so it starts using the mailbox the
+    // moment a password appears rather than needing a second visit here.
+    booking_setting_correct('bk_mail_transport', 'mail', 'auto');
 }
